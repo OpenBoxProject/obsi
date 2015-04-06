@@ -3,9 +3,11 @@ Network Parsing Blocks
 """
 import socket
 import time
+import struct
 from openbox.container import Container
 from openbox.core import ParsingBlock
 from struct import Struct
+from openbox.exception import ParsingError
 
 
 class FrameParsingBlock(ParsingBlock):
@@ -26,7 +28,10 @@ class EthernetParsingBlock(ParsingBlock):
 
     def process(self, packet, offset, metadata, *args, **kw):
         layer_length = self._UNPACKER.size
-        dst_mac, src_mac, eth_type = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        try:
+            dst_mac, src_mac, eth_type = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        except struct.error:
+            raise ParsingError('Packet too short for Ethernet parsing from offset %d' % offset)
         offset += layer_length
         metadata[self.name] = Container(dst_mac=dst_mac, src_mac=src_mac, eth_type=eth_type)
         return packet, offset, metadata
@@ -40,8 +45,11 @@ class Ipv4ParsingBlock(ParsingBlock):
 
     def process(self, packet, offset, metadata, *args, **kw):
         layer_length = self._UNPACKER.size
-        (version_and_ihl, tos, length, ipid,
-         frag, ttl, protocol, checksum, src_ip, dst_ip) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        try:
+            (version_and_ihl, tos, length, ipid, frag, ttl,
+             protocol, checksum, src_ip, dst_ip) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        except struct.error:
+            raise ParsingError('Packet too short for IPv4 parsing from offset %d' % offset)
 
         ihl = (version_and_ihl & 0x0f) * 4
         flags = (frag >> 13) & 0x7
@@ -63,8 +71,11 @@ class TcpParsingBlock(ParsingBlock):
 
     def process(self, packet, offset, metadata, *args, **kw):
         layer_length = self._UNPACKER.size
-        (src_port, dst_port, seq, ack, offset_and_flags,
-         window_size, checksum, urgent) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        try:
+            (src_port, dst_port, seq, ack, offset_and_flags,
+             window_size, checksum, urgent) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        except struct.error:
+            raise ParsingError('Packet too short for Tcp parsing from offset %d' % offset)
 
         data_offset = ((offset_and_flags >> 12) & 0xf) * 4
         flags = offset_and_flags & 0x1ff
@@ -78,15 +89,20 @@ class UdpParsingBlock(ParsingBlock):
     """
     Parse UDP layer information from the packet
     """
+    _UNPACKER = Struct('!HHHH')
 
     def process(self, packet, offset, metadata, *args, **kw):
         layer_length = self._UNPACKER.size
-        (src_port, dst_port, length, checksum) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        try:
+            (src_port, dst_port, length, checksum) = self._UNPACKER.unpack(packet[offset:offset + layer_length])
+        except struct.error:
+            raise ParsingError
+
         offset += layer_length
         metadata[self.name] = Container(src_port=src_port, dst_port=dst_port, length=length)
 
         return packet, offset, metadata
 
-    _UNPACKER = Struct('!HHHH')
+
 
 

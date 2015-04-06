@@ -80,6 +80,52 @@ class ProcessingBlock(object):
         raise NotImplementedError
 
 
+class NopProcessingBlock(ProcessingBlock):
+    """
+    No operation processing block
+    """
+
+    def process(self, packet, offset, metadata, *args, **kw):
+        return packet, offset, metadata
+
+
+class ConditionalProcessingBlock(ProcessingBlock):
+    """
+    Select a processing block based on the metadata extracted so far.
+    The selection is done during running time when the necessary metadata is available.
+    """
+    def __init__(self, name, condition_func, condition_to_block_mapping, default=None):
+        """
+        Initialize a conditional processing block.
+
+        The block will be chosen during runtime from the metadata.
+        The condition_func will generate a value for  each condition based on the metadata,
+        and each value should have mapping to a ProcessingBlock.
+        If no mapping is found then a default block will be used.
+        :param name: The name of the block (will not be used)
+        :param condition_func: A function that generates a value based on the metadata,
+                               each value can be mapped to a processing block
+        :type condition_func: function
+        :param condition_to_block_mapping: Map each value to a processing block
+        :type condition_to_block_mapping: dict
+        :param default: The default processing block to use when there is no suitable mapping
+        :type default: ProcessingBlock
+        """
+        super(ConditionalProcessingBlock, self).__init__(name)
+        self.condition_func = condition_func
+        self.condition_to_block_mapping = condition_to_block_mapping
+        self.default = default or NopProcessingBlock("nop")
+
+    def process(self, packet, offset, metadata, *args, **kw):
+        try:
+            condition_type = self.condition_func(metadata)
+        except AttributeError:
+            # The function is trying to get a field that does not exist
+            condition_type = None
+        processing_block = self.condition_to_block_mapping.get(condition_type, self.default)
+        return processing_block.process(packet, offset, metadata)
+
+
 class MetadataExtractingBlock(ProcessingBlock):
     """
     Base class for all processing blocks that extract metadata from the packet.
