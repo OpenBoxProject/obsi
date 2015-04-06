@@ -1,1 +1,2 @@
-__author__ = 'dev'
+__author__ = 'Pavel Lazar <pavel.lazar@gmail.com'
+__version__ = "0.1.0"
