@@ -34,9 +34,14 @@ class ProcessingGraph(object):
         :rtype: tuple(str, int, Container)
         """
         current_metadata = Container()
+        current_metadata._state = Container(last_processed=None)
 
         for block in self.blocks:
             packet, offset, current_metadata = block.process(packet, offset, current_metadata)
+            if isinstance(block, ConditionalProcessingBlock):
+                current_metadata._state.last_processed = block.processing_block
+            else:
+                current_metadata._state.last_processed = block
 
         # create an hierarchy within the metadata
         if metadata is None:
@@ -84,7 +89,6 @@ class NopProcessingBlock(ProcessingBlock):
     """
     No operation processing block
     """
-
     def process(self, packet, offset, metadata, *args, **kw):
         return packet, offset, metadata
 
@@ -112,18 +116,19 @@ class ConditionalProcessingBlock(ProcessingBlock):
         :type default: ProcessingBlock
         """
         super(ConditionalProcessingBlock, self).__init__(name)
-        self.condition_func = condition_func
-        self.condition_to_block_mapping = condition_to_block_mapping
-        self.default = default or NopProcessingBlock("nop")
+        self._condition_func = condition_func
+        self._condition_to_block_mapping = condition_to_block_mapping
+        self._default = default or NopProcessingBlock("nop")
+        self.processing_block = None
 
     def process(self, packet, offset, metadata, *args, **kw):
         try:
-            condition_type = self.condition_func(metadata)
+            condition_type = self._condition_func(metadata)
         except AttributeError:
             # The function is trying to get a field that does not exist
             condition_type = None
-        processing_block = self.condition_to_block_mapping.get(condition_type, self.default)
-        return processing_block.process(packet, offset, metadata)
+        self.processing_block = self._condition_to_block_mapping.get(condition_type, self._default)
+        return self.processing_block.process(packet, offset, metadata)
 
 
 class MetadataExtractingBlock(ProcessingBlock):
@@ -172,6 +177,22 @@ class ParsingBlock(MetadataExtractingBlock):
         :rtype: tuple(str, int, Container)
         """
         raise NotImplementedError
+
+    def parse_payload(self, packet, offset, metadata):
+        """
+        Parse the payload of this layer.
+
+        :param packet: The packet to do the processing on
+        :type packet: str
+        :param offset: The current offset in the packet where the paylaod should start
+        :type offset: int
+        :param metadata: The metadata for the packet, as processed so far
+        :type metadata: Container
+        :return: raw payload of this layer
+        :rtype: str
+        """
+        # default implementation will be to treat the rest of the packet as the payload
+        return packet[offset:]
 
 
 class TransformationBlock(ProcessingBlock):
