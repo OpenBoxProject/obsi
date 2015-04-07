@@ -1,0 +1,7 @@
+*~
+*.iml
+.idea
+.idea/*
+*.pyc
+openbox/*.pyc
+
