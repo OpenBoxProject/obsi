@@ -60,6 +60,31 @@ class Container(dict):
         self.__keys_order__.remove(key)
         return val
 
+    def get_path(self, key_path, default=None):
+        prev = self
+        for k in key_path.split('.'):
+            try:
+                curr = prev[k]
+                prev = curr
+            except KeyError:
+                return default
+        return prev
+
+    def set_path(self, key_path, value):
+        try:
+            parents, child = key_path.rsplit('.', 1)
+        except ValueError:
+            # there is no '.' in the path, just add it
+            self[key_path] = value
+        else:
+            root_to_add = self.get_path(parents)
+            if root_to_add is not None:
+                root_to_add[child] = value
+            else:
+                raise KeyError('Path %s not found' % parents)
+
+
+
     def popitem(self):
         k, v = dict.popitem(self)
         self.__keys_order__.remove(k)
