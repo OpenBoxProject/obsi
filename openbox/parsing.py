@@ -12,7 +12,7 @@ from openbox.exception import ParsingError
 
 class FrameParsingBlock(ParsingBlock):
     """
-    Addes initial metadata about the frame, such it's full captured length and timestamp
+    Adds initial metadata about the frame, such it's full captured length and timestamp
     """
 
     def process(self, packet, offset, metadata, *args, **kw):

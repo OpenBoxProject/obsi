@@ -202,20 +202,15 @@ class TransformationBlock(ProcessingBlock):
     This block executes a transformation function on a buffer extracted from the packet and/or it's metadata.
     """
 
-    def __init__(self, name, transformator, pre_transformation, post_transformation):
+    def __init__(self, name, transformator):
         """
         Initialize a transformation block.
 
         :param name: The name of the block
-        :param transformator: The transformation function or object that receives a buffer and
-                              returns a transformed buffer
-        :param pre_transformation: A function that will prepare the data for transformation
-                                   (e.g. extract the payload fro m the packet)
-        :param post_transformation: A function that will put back the transformed buffer in to the packet or metadata
+        :param transformator: The transformation object that does the actuall transformation.
+                              It's transform function will be called.
         """
         super(TransformationBlock, self).__init__(name)
-        self.post_transformation = post_transformation
-        self.pre_transformation = pre_transformation
         self.transformator = transformator
 
     def process(self, packet, offset, metadata, *args, **kw):
@@ -233,9 +228,9 @@ class TransformationBlock(ProcessingBlock):
         :return: (new_packet, next_offset, updated_metadata)
         :rtype: tuple(str, int, Container)
         """
-        buffer = self.pre_transformation(packet, offset, metadata, *args, **kw)
-        new_buffer = self.transformator(buffer)
-        return self.post_transformation(new_buffer, *args, **kw)
+        if 'transformation_block_name' not in kw:
+            kw['transformation_block_name'] = self.name
+        return self.transformator.transform(packet, offset, metadata, *args, **kw)
 
 
 class RulesMatchingBlock(ProcessingBlock):
