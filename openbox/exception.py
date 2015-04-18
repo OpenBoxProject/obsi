@@ -50,3 +50,8 @@ class RulesMatchingError(ProcessingBlockError):
     A rules matching error has occurred
     """
     pass
+
+class MatchInitError(RulesMatchingError):
+    """
+    An error occurred when tring to initialize a Matcher object
+    """
