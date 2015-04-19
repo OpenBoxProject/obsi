@@ -43,16 +43,17 @@ class RangeMatcher(Matcher):
         return self.lower <= value <= self.upper
 
 
-class ExactMatcher(Matcher):
+class NumericExactMatcher(Matcher):
     """
     Check if the value is an exact match to a single value.
 
-    Because of the dynamic nature of python this support all objects that has __eq__ defined.
+    Should be used to match numeric values only
     """
     def __init__(self, other):
         """
-        Initialize an ExactMatcher object that checks if a value is equal the other value
+        Initialize an NumericExactMatcher object that checks if a value is equal the other value
         :param other: The value to compare to
+        :type other: int or long or float
         """
         self.other = other
 
@@ -60,11 +61,42 @@ class ExactMatcher(Matcher):
         return value == self.other
 
 
-class OneOfMatcher(Matcher):
+class StringExactMatcher(Matcher):
     """
-    Check if the value is one of a list of values to compare to
+    Check if the value is an exact match of single string
+    """
+    def __init__(self, other):
+        """
+        Initialize an NumericExactMatcher object that checks if a value is equal the other value
+        :param other: The value to compare to
+        :type other: basestring
+        """
+        self.other = other
 
-    Because of the dynamic nature of python this support all objects that has __eq__ defined.
+    def match(self, value):
+        return value == self.other
+
+
+class NumericOneOfMatcher(Matcher):
+    """
+    Check if the value is one of a list of numeric values to compare to
+    """
+    def __init__(self, values):
+        """
+        Initialize a match that check if a value is one of the supplied values
+
+        :param values: A list of values to compare to
+        :type values: list or tuple
+        """
+        self.values = values
+
+    def match(self, value):
+        return value in self.values
+
+
+class StringOneOfMatcher(Matcher):
+    """
+    Check if the value is one of a list of string values to compare to
     """
     def __init__(self, values):
         """
@@ -188,3 +220,37 @@ class NotSubmatch(Matcher):
 
     def match(self, value):
         return not self.submatcher.match(value)
+
+
+class MetadataFieldMatcher(Matcher):
+    """
+    Check if a field in the metadata matches a rule.
+    The rule is defined by a matcher object.
+    """
+    def __init__(self, field_name, matcher):
+        """
+        Initialize a check against a single field in the metadata.
+
+        :param field_name: The field full path in the metadata object
+        :type field_name: str
+        :param matcher: The matcher object that defines the rule
+        :type matcher: Matcher
+        """
+        self.matcher = matcher
+        self.field_name = field_name
+
+    def match(self, metadata):
+        """
+        Check if the field matches the rule.
+
+        If the field does not exist the rule isn't matched (returns false)
+        :param metadata: The metadata object to extract the field from it
+        :type metadata: Container
+        """
+        value = metadata.get_path(self.field_name)
+        if value is None:
+            return False
+        return self.matcher.match(value)
+
+
+

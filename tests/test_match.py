@@ -1,6 +1,7 @@
 import unittest
-from openbox.matcher import RangeMatcher, ExactMatcher, OneOfMatcher, StringContainsMatcher, Ipv4CidrMatcher, \
-    NotSubmatch, AnySubmatch, AllSubmatch, RegexMatcher
+from openbox.container import Container
+from openbox.matcher import RangeMatcher, NumericExactMatcher, NumericOneOfMatcher, StringContainsMatcher, Ipv4CidrMatcher, \
+    NotSubmatch, AnySubmatch, AllSubmatch, RegexMatcher, StringExactMatcher, StringOneOfMatcher, MetadataFieldMatcher
 
 
 class TestRangeMatcher(unittest.TestCase):
@@ -23,32 +24,36 @@ class TestRangeMatcher(unittest.TestCase):
         self.assertEqual(False, self.match.match(2))
 
 
-class TestExactMatcher(unittest.TestCase):
+class TestNumericExactMatcher(unittest.TestCase):
     def test_match_number(self):
-        self.assertEqual(True, ExactMatcher(80).match(80))
+        self.assertEqual(True, NumericExactMatcher(80).match(80))
 
     def test_no_match_number(self):
-        self.assertEqual(False, ExactMatcher(80).match(90))
+        self.assertEqual(False, NumericExactMatcher(80).match(90))
 
+
+class TestStringExactMatcher(unittest.TestCase):
     def test_match_string(self):
-        self.assertEqual(True, ExactMatcher('pavel').match('pavel'))
+        self.assertEqual(True, StringExactMatcher('pavel').match('pavel'))
 
     def test_no_match_string(self):
-        self.assertEqual(False, ExactMatcher('pavel').match('pavell'))
+        self.assertEqual(False, StringExactMatcher('pavel').match('pavell'))
 
 
-class TestOneOfMatcher(unittest.TestCase):
+class TestNumericOneOfMatcher(unittest.TestCase):
     def test_match_number(self):
-        self.assertEqual(True, OneOfMatcher([80, 90, 100]).match(80))
+        self.assertEqual(True, NumericOneOfMatcher([80, 90, 100]).match(80))
 
     def test_no_match_number(self):
-        self.assertEqual(False, OneOfMatcher([80, 90, 100]).match(200))
+        self.assertEqual(False, NumericOneOfMatcher([80, 90, 100]).match(200))
 
+
+class TestStringOneOfMatcher(unittest.TestCase):
     def test_match_string(self):
-        self.assertEqual(True, OneOfMatcher(['pavel', 'yotam']).match('pavel'))
+        self.assertEqual(True, StringOneOfMatcher(['pavel', 'yotam']).match('pavel'))
 
     def test_no_match_string(self):
-        self.assertEqual(False, OneOfMatcher(['pavel', 'yotam']).match('no_pavel'))
+        self.assertEqual(False, StringOneOfMatcher(['pavel', 'yotam']).match('no_pavel'))
 
 
 class TestStringContainsMatcher(unittest.TestCase):
@@ -73,10 +78,10 @@ class TestIpv4CidrMatcher(unittest.TestCase):
 
 class TestNotSubmatch(unittest.TestCase):
     def test_match_number(self):
-        self.assertEqual(False, NotSubmatch(ExactMatcher(80)).match(80))
+        self.assertEqual(False, NotSubmatch(NumericExactMatcher(80)).match(80))
 
     def test_no_match_number(self):
-        self.assertEqual(True, NotSubmatch(ExactMatcher(80)).match(90))
+        self.assertEqual(True, NotSubmatch(NumericExactMatcher(80)).match(90))
 
 
 class TestAnySubmatch(unittest.TestCase):
@@ -129,4 +134,44 @@ class TestAllMatch(unittest.TestCase):
         self.assertEqual(False, self.matcher.match('and no one else'))
 
 
+class TestMetadataFieldMatch(unittest.TestCase):
+    def setUp(self):
+        self.mtd = Container(a=Container(b=Container(num=80, s="pavel", ip="8.8.8.8")))
+
+    def test_match_numeric(self):
+        self.assertEqual(True, MetadataFieldMatcher("a.b.num", NumericExactMatcher(80)).match(self.mtd))
+
+    def test_match_string(self):
+        self.assertEqual(True, MetadataFieldMatcher("a.b.s", StringExactMatcher('pavel')).match(self.mtd))
+
+    def test_no_match(self):
+        self.assertEqual(False, MetadataFieldMatcher('a.b.num', NumericExactMatcher(90)).match(self.mtd))
+
+    def test_no_field(self):
+        self.assertEqual(False, MetadataFieldMatcher('no.field.here', NumericExactMatcher(80)).match(self.mtd))
+
+
+class TestCompositeMetadataMatch(unittest.TestCase):
+    def setUp(self):
+        self.mtd = Container(a=Container(b=Container(num=80, s="pavel", ip="8.8.8.8")))
+
+    def test_any_match(self):
+        matcher1 = MetadataFieldMatcher("a.b.num", NumericExactMatcher(80))
+        matcher2 = MetadataFieldMatcher('a.b.s', StringExactMatcher('pavel'))
+        self.assertEqual(True, AnySubmatch(matcher1, matcher2).match(self.mtd))
+
+    def test_any_no_match(self):
+        matcher1 = MetadataFieldMatcher("a.b.num", NumericExactMatcher(90))
+        matcher2 = MetadataFieldMatcher('a.b.s', StringExactMatcher('adsf'))
+        self.assertEqual(False, AnySubmatch(matcher1, matcher2).match(self.mtd))
+
+    def test_all_match(self):
+        matcher1 = MetadataFieldMatcher("a.b.num", NumericExactMatcher(80))
+        matcher2 = MetadataFieldMatcher('a.b.s', StringExactMatcher('pavel'))
+        self.assertEqual(True, AllSubmatch(matcher1, matcher2).match(self.mtd))
+
+    def test_all_no_match(self):
+        matcher1 = MetadataFieldMatcher("a.b.num", NumericExactMatcher(88))
+        matcher2 = MetadataFieldMatcher('a.b.s', StringExactMatcher('pavel'))
+        self.assertEqual(False, AllSubmatch(matcher1, matcher2).match(self.mtd))
 
