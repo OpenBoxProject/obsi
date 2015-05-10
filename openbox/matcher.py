@@ -253,4 +253,22 @@ class MetadataFieldMatcher(Matcher):
         return self.matcher.match(value)
 
 
+class Rule(Matcher):
+    """
+    A rule that can be matched
+    """
 
+    def __init__(self, name, matcher):
+        """
+        Initialize a rule with it's internal matcher object and a name
+
+        :param name: The name of the rule
+        :type name: str
+        :param matcher: The matcher object that will do the matching
+        :type matcher: Matcher
+        """
+        self.name = name
+        self._matcher = matcher
+
+    def match(self, value):
+        return self._matcher.match(value)
