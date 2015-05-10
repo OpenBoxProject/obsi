@@ -100,6 +100,7 @@ class TestAnySubmatch(unittest.TestCase):
     def test_no_match(self):
         self.assertEqual(False, self.matcher.match(300))
 
+
 class TestRegexMatcher(unittest.TestCase):
     def setUp(self):
         self.matcher = RegexMatcher("pavel.*yotam")
