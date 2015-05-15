@@ -35,7 +35,7 @@ class RulesBlock(ProcessingBlock):
         :return: (new_packet, next_offset, updated_metadata)
         :rtype: tuple(str, int, Container)
         """
-        matched_rules = tuple(rule.name for rule in self.rules if rule.match(metadata))
+        matched_rules = [rule.name for rule in self.rules if rule.match(metadata)]
         metadata[self.name] = matched_rules
 
         return packet, offset, metadata
