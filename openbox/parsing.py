@@ -16,7 +16,14 @@ class FrameParsingBlock(ParsingBlock):
     """
 
     def process(self, packet, offset, metadata, *args, **kw):
-        metadata[self.name] = Container(timestamp=time.time(), length=(len(packet) - offset))
+        header = kw.pop('packet_header', None)
+        if header is not None:
+            sec, msec, length = header
+            timestamp = sec + msec / 1000000.0
+        else:
+            timestamp = time.time()
+            length = len(packet) - offset
+        metadata[self.name] = Container(timestamp=timestamp, length=length)
         return packet, offset, metadata
 
 
