@@ -65,5 +65,3 @@ class TestPcapWriter(unittest.TestCase):
         with PcapReader('pcaps/test_pcap_writer.pcap') as reader:
             written_packets = reader.read()
             self.assertEqual(read_packets, written_packets)
-
-

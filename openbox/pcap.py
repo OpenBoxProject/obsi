@@ -128,9 +128,9 @@ class PcapWriter(object):
         self.filename = filename
 
         if self.compress:
-            self.f = open(filename, 'wb')
-        else:
             self.f = gzip.open(filename, 'wb')
+        else:
+            self.f = open(filename, 'wb')
 
         self._write_header()
 

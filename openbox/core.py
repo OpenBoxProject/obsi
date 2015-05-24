@@ -4,6 +4,37 @@ Core classes
 from openbox.container import Container
 
 
+class Application(object):
+    """
+    Represent an openbox applicaion.
+    This might be a single application (e.g NAT)
+    or multiple applications that are combined to a single Processing Graph
+    """
+    def __init__(self, packets, processing_graph):
+        """
+        Initialize an application with a source of packets and a processing graph that will process the packets
+
+        :param packets: A source of packets to process, might be infinite
+        :param processing_graph: A processing graph that will process each packet from the source
+        :type processing_graph: ProcessingGraph
+        """
+        self.packets = packets
+        self.processing_graph = processing_graph
+
+    def start(self):
+        """
+        Start processing packets from the source
+        """
+        for packet, header in self.packets:
+            self.processing_graph.process(packet, 0, Container(), packet_header=header)
+
+    def close(self):
+        """
+        Close any open resources
+        """
+        self.processing_graph.close()
+
+
 class ProcessingGraph(object):
     """
     A combination of processing blocks that form a processing graph for the packet
@@ -20,7 +51,7 @@ class ProcessingGraph(object):
         self.name = name
         self.blocks = blocks
 
-    def process(self, packet, offset=0, metadata=None):
+    def process(self, packet, offset, metadata, *args, **kw):
         """
         Process a packet with a processing graph
 
@@ -37,7 +68,7 @@ class ProcessingGraph(object):
         current_metadata._state = Container(last_processed=None)
 
         for block in self.blocks:
-            packet, offset, current_metadata = block.process(packet, offset, current_metadata)
+            packet, offset, current_metadata = block.process(packet, offset, current_metadata, *args, **kw)
             if isinstance(block, ConditionalProcessingBlock):
                 current_metadata._state.last_processed = block.processing_block
             else:
@@ -50,6 +81,12 @@ class ProcessingGraph(object):
 
         return packet, offset, metadata
 
+    def close(self):
+        for block in self.blocks:
+            try:
+                block.close()
+            except AttributeError:
+                pass
 
 class ProcessingBlock(object):
     """
