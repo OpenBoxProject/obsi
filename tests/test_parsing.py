@@ -11,12 +11,21 @@ class TestFrameParsing(unittest.TestCase):
     def setUp(self):
         self.pb = FrameParsingBlock('frame')
 
-    def test_parse(self):
+    def test_parse_no_packet_header(self):
         packet = 'b0487aeccc020c84dc9e9a6108004500003044ca400080065eaac0a80166a29ff2a51' \
                  '64e01bb7c7948b7000000007002ffff4e920000020405b401010402'.decode('hex')
         ct = time.time()
         np, off, metadata = self.pb.process(packet, 0, Container())
         self.assertAlmostEqual(ct, metadata.frame.timestamp, delta=1)
+        self.assertEqual(len(packet), metadata.frame.length)
+        self.assertEqual(off, 0)
+
+    def test_parse_with_packet_header(self):
+        packet = 'b0487aeccc020c84dc9e9a6108004500003044ca400080065eaac0a80166a29ff2a51' \
+                 '64e01bb7c7948b7000000007002ffff4e920000020405b401010402'.decode('hex')
+        header = (1000, 123000, len(packet))
+        np, off, metadata = self.pb.process(packet, 0, Container(), packet_header=header)
+        self.assertEqual(1000.123, metadata.frame.timestamp)
         self.assertEqual(len(packet), metadata.frame.length)
         self.assertEqual(off, 0)
 

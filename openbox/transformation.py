@@ -1,6 +1,7 @@
 """
 Doing transformation on buffers (e.g. compress, decompress, encrypt, etc)
 """
+import zlib
 
 from openbox.container import Container
 
@@ -102,3 +103,21 @@ class SingleFieldTransformator(Transformator):
         metadata.set_path(self.output_field, transformed_buffer)
         return packet, offset, metadata
 
+
+class GzipCompress(SingleFieldTransformator):
+    """
+    Compress a single field using gzip
+    """
+
+    def __init__(self, input_field, output_field):
+        transformation_func = zlib.compress
+        super(GzipCompress, self).__init__(input_field, output_field, transformation_func)
+
+
+class GzipDecompress(SingleFieldTransformator):
+    """
+    Decompress a single field using gzip
+    """
+    def __init__(self, input_field, output_field):
+        transformation_func = zlib.decompress
+        super(GzipDecompress, self).__init__(input_field, output_field, transformation_func)
