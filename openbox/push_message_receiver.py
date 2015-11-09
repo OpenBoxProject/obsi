@@ -24,17 +24,10 @@ class PushMessageReceiver(object):
     def unregister_all(self):
         self._registered_handlers = {}
 
-    def connect(self, tcp_address=None, unix_filename=None):
-        if tcp_address is None and unix_filename is None:
-            raise ValueError("At least one type of endpoint must be set")
+    def connect(self, address, family=socket.AF_INET):
         if self.connected:
             raise RuntimeError("Already connected")
-        if tcp_address:
-            stream_socket = socket.socket(family=socket.AF_INET)
-            address = tcp_address
-        else:
-            stream_socket = socket.socket(family=socket.AF_UNIX)
-            address = unix_filename
+        stream_socket = socket.socket(family=family)
         self._stream = IOStream(stream_socket)
         self._stream.connect(address, self._on_connect)
 
@@ -75,7 +68,7 @@ if __name__ == "__main__":
         print counter
 
     receiver.register_message_handler('LOG', log_handler)
-    receiver.connect(tcp_address=('127.0.0.1', 7001))
+    receiver.connect(address=('127.0.0.1', 7001))
     io_loop = tornado.ioloop.IOLoop.instance()
     io_loop.call_later(1, print_counter)
     io_loop.start()
