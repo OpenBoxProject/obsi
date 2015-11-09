@@ -14,6 +14,7 @@ class RestServer:
     PORT = 9001
     DEBUG = True
     CLIENT_RUN_POLLING_INTERVAL = 500  # Milliseconds
+
     class Endpoints:
         ENGINES = '/engines'
         START = '/start'
