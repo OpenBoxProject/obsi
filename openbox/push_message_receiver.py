@@ -51,9 +51,10 @@ class PushMessageReceiver(object):
                 self._stream.read_until('\n', self._handle_message)
 
     def close(self):
-        self._stream.close()
-        self.connected = False
-        self._stream = None
+        if self._stream:
+            self._stream.close()
+            self.connected = False
+            self._stream = None
 
 if __name__ == "__main__":
     import tornado.ioloop
