@@ -1,6 +1,10 @@
 import socket
 import collections
 
+from control.exceptions import (UnknownHandlerOperation, ControlError, ControlSyntaxError, HandlerError,
+                                NoRouterInstalledError, NoSuchElementError, NoSuchHandlerError, PermissionDeniedError,
+                                UnimplementedCommandError)
+
 
 class ResponseCodes:
     OK = 200
@@ -25,69 +29,6 @@ class Commands:
     CHECK_WRITE = 'CHECKWRITE'
     LLRPC = 'LLRPC'
     QUIT = 'QUIT'
-
-
-class ControlError(Exception):
-    """
-    Base exception class for control errors
-    """
-    pass
-
-
-class UnknownHandlerOperation(Exception):
-    """
-    Returned when an operation's type is unknown in a sequence of operations.
-    """
-    pass
-
-
-class ControlSyntaxError(ControlError):
-    """
-    500
-    """
-    pass
-
-
-class UnimplementedCommandError(ControlError):
-    """
-    501
-    """
-    pass
-
-
-class NoSuchElementError(ControlError):
-    """
-    510
-    """
-    pass
-
-
-class NoSuchHandlerError(ControlError):
-    """
-    511
-    """
-    pass
-
-
-class HandlerError(ControlError):
-    """
-    520
-    """
-    pass
-
-
-class PermissionDeniedError(ControlError):
-    """
-    530
-    """
-    pass
-
-
-class NoRouterInstalledError(ControlError):
-    """
-    540
-    """
-    pass
 
 
 _EXCPTIONS_CODE_MAPPING = {
@@ -142,6 +83,9 @@ class ClickControlClient(object):
 
     def running_config(self):
         return self._read_global('flatconfig')
+
+    def hotswap(self, new_config):
+        self._write_global('hotconfig', new_config)
 
     def elements_names(self):
         raw = self._read_global('list')
@@ -221,6 +165,9 @@ class ClickControlClient(object):
     def _read_global(self, handler_name, params=''):
         return self.read_handler(None, handler_name, params)
 
+    def _write_global(self, handler_name, params=''):
+        self.write_handler(None, handler_name, params)
+
     def _config_requirements(self):
         reqs = self._read_global('requirements').strip()
         if reqs:
@@ -297,7 +244,9 @@ if __name__ == "__main__":
     cs = ClickControlClient()
     cs.connect(("127.0.0.1", 9000))
     print("Click version: {version}".format(version=cs.engine_version()))
+    print(cs.read_handler(None, 'handlers'))
     print("Packages:{packages}".format(packages=cs.loaded_packages()))
+    print("Supported elements: {elements}".format(elements=cs.supported_elements()))
     print('Router config:\n{config}'.format(config=cs.running_config()))
     for element in cs.elements_names():
         s = "%s\n" % element
