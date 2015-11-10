@@ -1,4 +1,5 @@
 import socket
+import collections
 
 
 class ResponseCodes:
@@ -29,6 +30,13 @@ class Commands:
 class ControlError(Exception):
     """
     Base exception class for control errors
+    """
+    pass
+
+
+class UnknownHandlerOperation(Exception):
+    """
+    Returned when an operation's type is unknown in a sequence of operations.
     """
     pass
 
@@ -192,6 +200,24 @@ class ClickControlClient(object):
         data_size = self._read_data_size()
         data = self._read_raw(data_size)
         return data
+
+    def operations_sequence(self, operations, preserve_order=False):
+        # Currently there is no 'smart' way in click of doing a bunch of read or write calls
+        # so we just do them one after the other
+        results = collections.OrderedDict()
+        for operation_type, element_name, handler_name, params in operations:
+            key = self._build_full_handler_name(element_name, handler_name)
+            if operation_type == 'READ':
+                operation_function = self.read_handler
+            elif operation_type == 'WRITE':
+                operation_function = self.write_handler
+            else:
+                operation_function = lambda (en, hn, pa): UnknownHandlerOperation(
+                    "Unknown operation: %s" % operation_type)
+            try:
+                results[key] = operation_function(element_name, handler_name, params)
+            except ControlError as e:
+                results[key] = e
 
     def _read_global(self, handler_name, params=''):
         return self.read_handler(None, handler_name, params)
