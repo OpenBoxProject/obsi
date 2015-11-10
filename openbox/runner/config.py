@@ -16,12 +16,12 @@ class RestServer:
     CLIENT_RUN_POLLING_INTERVAL = 500  # Milliseconds
 
     class Endpoints:
-        ENGINES = '/engines'
-        START = '/start'
-        SUSPEND = '/suspend'
-        RESUME = '/resume'
-        STOP = '/stop'
-        RUNNING = '/running'
-        MEMORY = '/memory'
-        CPU = '/cpu'
-        REGISTER_ALERT_URL = '/register_alert_url'
+        ENGINES = '/runner/engines'
+        START = '/runner/start'
+        SUSPEND = '/runner/suspend'
+        RESUME = '/runner/resume'
+        STOP = '/runner/stop'
+        RUNNING = '/runner/running'
+        MEMORY = '/runner/memory'
+        CPU = '/runner/cpu'
+        REGISTER_ALERT_URL = '/runner/register_alert_url'
