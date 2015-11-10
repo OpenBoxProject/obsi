@@ -2,14 +2,14 @@ class ControlError(Exception):
     """
     Base exception class for control errors
     """
-    pass
+    message = "Error in engine control client"
 
 
-class UnknownHandlerOperation(Exception):
+class UnknownHandlerOperation(ControlError):
     """
     Returned when an operation's type is unknown in a sequence of operations.
     """
-    pass
+    message = "Unknown operation type for handler"
 
 
 class ControlSyntaxError(ControlError):

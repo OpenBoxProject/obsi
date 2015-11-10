@@ -52,6 +52,7 @@ class ClickControlClient(object):
         self.connected = False
 
     def connect(self, address, family=socket.AF_INET):
+
         self._socket = socket.socket(family=family)
         self._socket.connect(address)
         self.connected = True
