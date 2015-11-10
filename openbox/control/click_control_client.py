@@ -109,7 +109,6 @@ class ClickControlClient(object):
         self._buffer = ''
         self._socket = None
         self.connected = False
-        self._read_and_parse_banner()
 
     def connect(self, address, family=socket.AF_INET):
         self._socket = socket.socket(family=family)
@@ -203,7 +202,7 @@ class ClickControlClient(object):
 
     def operations_sequence(self, operations, preserve_order=False):
         # Currently there is no 'smart' way in click of doing a bunch of read or write calls
-        # so we just do them one after the other
+        # so we just do them one after the other using the basic
         results = collections.OrderedDict()
         for operation_type, element_name, handler_name, params in operations:
             key = self._build_full_handler_name(element_name, handler_name)
@@ -296,7 +295,9 @@ class ClickControlClient(object):
 
 if __name__ == "__main__":
     cs = ClickControlClient()
+    cs.connect(("127.0.0.1", 9000))
     print("Click version: {version}".format(version=cs.engine_version()))
+    print("Packages:{packages}".format(packages=cs.loaded_packages()))
     print('Router config:\n{config}'.format(config=cs.running_config()))
     for element in cs.elements_names():
         s = "%s\n" % element
