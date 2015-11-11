@@ -3,8 +3,8 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.options
 from handlers import (EnginesRequestHandler, StartRequestHandler, StopRequestHandler, SuspendRequestHandler,
-                             ResumeRequestHandler, RunningRequestHandler, MemoryRequestHandler, CpuRequestHandler,
-                             RegisterAlertUrlRequestHandler)
+                      ResumeRequestHandler, RunningRequestHandler, MemoryRequestHandler, CpuRequestHandler,
+                      RegisterAlertUrlRequestHandler, InstallPackageRequestHandler)
 from config import RestServer, ENGINES
 
 
@@ -50,15 +50,18 @@ def run(port, debug=False):
         (RestServer.Endpoints.RUNNING, RunningRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.MEMORY, MemoryRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.CPU, CpuRequestHandler, dict(runner=server_runner)),
+        (RestServer.Endpoints.INSTALL, InstallPackageRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.REGISTER_ALERT_URL, RegisterAlertUrlRequestHandler, dict(runner=server_runner)),
-        ], debug=debug)
-    sched = tornado.ioloop.PeriodicCallback(server_runner.alert_engine_is_not_running, RestServer.CLIENT_RUN_POLLING_INTERVAL)
+    ], debug=debug)
+    sched = tornado.ioloop.PeriodicCallback(server_runner.alert_engine_is_not_running,
+                                            RestServer.CLIENT_RUN_POLLING_INTERVAL)
     application.listen(port)
     sched.start()
     tornado.ioloop.IOLoop.current().start()
 
+
 if __name__ == "__main__":
     tornado.options.define('port', default=RestServer.PORT, type=int, help="The server's port. ")
-    tornado.options.define('debug', default=False, type=bool, help='Start the server with debug options.')
+    tornado.options.define('debug', default=RestServer.DEBUG, type=bool, help='Start the server with debug options.')
     tornado.options.parse_command_line()
     run(tornado.options.options.port, tornado.options.options.debug)

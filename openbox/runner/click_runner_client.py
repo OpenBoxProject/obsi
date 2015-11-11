@@ -1,3 +1,4 @@
+import glob
 import psutil
 import subprocess
 import os
@@ -6,38 +7,44 @@ from runner_exceptions import EngineClientError
 
 class ClickRunnerClient(object):
     CLICK_BIN = r'/usr/local/bin/click'
+    CLICK_PATH = r'/usr/local/lib'
     CHATTER_SOCKET_PATTERN = 'ChatterSocket({proto}, {port}, RETRIES 3, RETRY_WARNINGS false, {keywords});\n'
+    CONTROL_SOCKET_PATTERN = 'ControlSocket({proto}, {port}, RETRIES 3, RETRY_WARNINGS false);\n'
 
-    def __init__(self, click_bin=CLICK_BIN,  allow_reconfigure=True, click_path=None, cwd_same_as_config=True):
+    def __init__(self, click_bin=CLICK_BIN, allow_reconfigure=True, click_path=None):
         self.click_bin = click_bin
         self.allow_reconfigure = allow_reconfigure
-        self.click_path = click_path
-        self.cwd_same_as_config = cwd_same_as_config
-        self.config_file = None
+        self.click_path = click_path or self.CLICK_PATH
         self.expression = None
-        self.control_socket_port = None
-        self.control_socket_file = None
-        self.push_messages_port = None
-        self.push_messages_filename = None
+        self.control_socket_type = None
+        self.control_socket_endpoint = None
+        self.push_messages_type = None
+        self.push_messages_endpoint = None
         self.push_messages_channel = None
         self.nthreads = None
         self._process = None
         self._error_messages = None
 
-    def start(self, config_file=None, proccessing_graph=None, control_socket_port=None, control_socket_file=None,
-              nthreads=None, push_messages_port=None, push_messages_filename=None, push_messages_channel=None):
-        self.config_file = config_file
-        self.expression = proccessing_graph
-        self.control_socket_port = control_socket_port
-        self.control_socket_file = control_socket_file
+    def start(self, processing_graph=None, control_socket_type=None, control_socket_endpoint=None,
+              nthreads=None, push_messages_type=None, push_messages_endpoint=None, push_messages_channel=None):
+        self.expression = processing_graph
+        self.control_socket_type = control_socket_type
+        self.control_socket_endpoint = control_socket_endpoint
         self.push_messages_channel = push_messages_channel
         self.nthreads = nthreads
-        self.push_messages_port = push_messages_port
-        self.push_messages_filename = push_messages_filename
-        if self.push_messages_port:
-            self._add_tcp_chatter_socket_element()
-        if self.push_messages_filename:
-            self._add_unix_chatter_socket_element()
+        if self.control_socket_type and (self.control_socket_type not in ('TCP', 'UNIX') or
+                                                 self.control_socket_endpoint is None):
+            raise ValueError("ControlSocket must be of type TCP or UNIX and with a valid endpoint")
+        else:
+            self._add_control_socket_element()
+
+        self.push_messages_type = push_messages_type
+        self.push_messages_endpoint = push_messages_endpoint
+        if self.push_messages_type and (self.push_messages_type not in ('TCP', 'UNIX') or
+                                                self.push_messages_endpoint is None):
+            raise ValueError("PushMessage must be of type TCP or UNIX and with a valid endpoint")
+        else:
+            self._add_chatter_socket_element()
         if self.is_running():
             raise EngineClientError("Engine already running")
         self._run()
@@ -67,6 +74,15 @@ class ClickRunnerClient(object):
     def is_running(self):
         return self._process is not None and self._process.is_running()
 
+    def installed_packages(self):
+        lib_names = glob.glob(os.path.join(self.click_path, '*.uo'))
+        return [os.path.splitext(os.path.basename(lib_name))[0] for lib_name in lib_names]
+
+    def install_package(self, name, data):
+        lib_name = os.path.join(self.click_path, name + '.uo')
+        with open(lib_name, 'wb') as f:
+            f.write(data)
+
     def _run(self):
         cmd = self._build_run_command()
         self._reset_state()
@@ -74,18 +90,9 @@ class ClickRunnerClient(object):
 
     def _build_run_command(self):
         cmd = [self.click_bin]
-        if self.config_file:
-            cmd.append('-f')
-            cmd.append(self.config_file)
         if self.expression:
             cmd.append('-e')
             cmd.append(self.expression)
-        if self.control_socket_port:
-            cmd.append('-p')
-            cmd.append(str(self.control_socket_port))
-        if self.control_socket_file:
-            cmd.append('-u')
-            cmd.append(self.control_socket_file)
         if self.allow_reconfigure:
             cmd.append('-R')
         if self.nthreads:
@@ -101,11 +108,7 @@ class ClickRunnerClient(object):
         self._error_messages = None
 
     def _start_click(self, cmd_args):
-        if self.cwd_same_as_config and self.config_file:
-            cwd = os.path.dirname(os.path.abspath(self.config_file))
-        else:
-            cwd = None
-        return psutil.Popen(cmd_args, stderr=subprocess.PIPE, cwd=cwd)
+        return psutil.Popen(cmd_args, stderr=subprocess.PIPE)
 
     def _check(self):
         cmd = self._build_check_command()
@@ -115,9 +118,6 @@ class ClickRunnerClient(object):
 
     def _build_check_command(self):
         cmd = [self.click_bin]
-        if self.config_file:
-            cmd.append('-f')
-            cmd.append(self.config_file)
         if self.expression:
             cmd.append('-e')
             cmd.append(self.expression)
@@ -188,31 +188,24 @@ class ClickRunnerClient(object):
             self._process.kill()
         self._reset_state()
 
-    def _add_tcp_chatter_socket_element(self):
+    def _add_chatter_socket_element(self):
         if self.expression and 'ChatterSocket' not in self.expression:
             if self.push_messages_channel:
-                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto='TCP', port=self.push_messages_port,
+                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto=self.push_messages_type,
+                                                                    port=self.push_messages_endpoint,
                                                                     keywords="CHANNEL {channel}".format(
                                                                         channel=self.push_messages_channel))
             else:
-                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto='TCP', port=self.push_messages_port,
+                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto=self.push_messages_type,
+                                                                    port=self.push_messages_endpoint,
                                                                     keywords="")
             self.expression = chatter_socket + self.expression
-        if self.config_file:
-            raise NotImplementedError("Cannot add to config file")
 
-    def _add_unix_chatter_socket_element(self):
-        if self.expression and 'ChatterSocket' not in self.expression:
-            if self.push_messages_channel:
-                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto='UNIX', port=self.push_messages_filename,
-                                                                    keywords="CHANNEL {channel}".format(
-                                                                        channel=self.push_messages_channel))
-            else:
-                chatter_socket = self.CHATTER_SOCKET_PATTERN.format(proto='UNIX', port=self.push_messages_filename,
-                                                                    keywords="")
-            self.expression = chatter_socket + self.expression
-        if self.config_file:
-            raise NotImplementedError("Cannot add to config file")
+    def _add_control_socket_element(self):
+        if self.expression and 'ControlSocket' not in self.expression:
+            control_socket = self.CONTROL_SOCKET_PATTERN.format(proto=self.control_socket_type,
+                                                                port=self.control_socket_endpoint)
+            self.expression = control_socket + self.expression
 
 
 if __name__ == "__main__":
@@ -220,11 +213,15 @@ if __name__ == "__main__":
     import time
 
     client = ClickRunnerClient()
-    click_config = '''require(package "openbox");
-    chater_msg::ChatterMessage("LOG", "this is a test", CHANNEL test);
-    InfiniteSource("aasdf", -1, 1, true) -> chater_msg->Discard;'''
-    client.start(proccessing_graph=click_config, control_socket_port=9001,
-                 nthreads=2, push_messages_port=7001, push_messages_channel="test")
+    click_config = r'''require(package "openbox");
+require(package "openbox");
+chater_msg::ChatterMessage("LOG", "{\"type\": \"log\", \"message\": \"The is a log message\", \"sevirity\": 0, \"origin_dpid\": 123, \"origin_block\": \"block1\"}", CHANNEL test);
+
+TimedSource(1, "blabla")
+-> chater_msg
+-> Discard();'''
+    client.start(processing_graph=click_config, control_socket_type='TCP', control_socket_endpoint=9000,
+                 nthreads=1, push_messages_type='TCP', push_messages_endpoint=7001, push_messages_channel='test')
     print client.is_running()
     print "errors:", client.get_errors()
     time.sleep(1)

@@ -118,6 +118,24 @@ class CpuRequestHandler(BaseRunnerRequestHandler):
             raise tornado.web.HTTPError(400, reason=e.message)
 
 
+class InstallPackageRequestHandler(BaseRunnerRequestHandler):
+    def get(self, *args, **kwargs):
+        try:
+            engine = self._engine()
+            packages = engine.installed_packages()
+            self._write(packages)
+        except EngineClientError as e:
+            raise tornado.web.HTTPError(400, reason=e.message)
+
+    def post(self):
+        try:
+            engine = self._engine()
+            package = self._decoode_json_body()
+            engine.install_package(package['name'], package['data'].decode('base64'))
+        except EngineClientError as e:
+            raise tornado.web.HTTPError(400, reason=e.message)
+
+
 class RegisterAlertUrlRequestHandler(BaseRunnerRequestHandler):
     def post(self, *args, **kwargs):
         body = self.request.body
