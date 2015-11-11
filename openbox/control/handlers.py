@@ -2,7 +2,7 @@ from collections import OrderedDict
 import socket
 import tornado.web
 import tornado.escape
-from control.exceptions import ControlError
+from control_exceptions import ControlError
 
 
 class BaseControlRequestHandler(tornado.web.RequestHandler):

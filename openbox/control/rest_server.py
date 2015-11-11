@@ -2,11 +2,11 @@ import tornado.web
 import tornado.httpclient
 import tornado.ioloop
 import tornado.options
-from control.handlers import (EnginesRequestHandler, CloseRequestHandler, ConfigRequestHandler,
+from handlers import (EnginesRequestHandler, CloseRequestHandler, ConfigRequestHandler,
                               ConnectRequestHandler, ElementRequestHandler, EngineVersionRequestHandler,
                               ListElementsRequestHandler, IsReadableRequestHandler, IsWriteableRequestHandler,
                               LoadedPackagesRequestHandler, SequenceRequestHandler, SupportedElementsRequestHandler)
-from control.config import RestServer, ENGINES
+from config import RestServer, ENGINES
 
 
 class ServerControl(object):

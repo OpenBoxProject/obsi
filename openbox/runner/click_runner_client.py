@@ -1,12 +1,12 @@
 import psutil
 import subprocess
 import os
-from runner.exceptions import EngineClientError
+from runner_exceptions import EngineClientError
 
 
 class ClickRunnerClient(object):
     CLICK_BIN = r'/usr/local/bin/click'
-    CHATTER_SOCKET_PATTERN = 'ChatterSocket({proto}, {port}, {keywords});\n'
+    CHATTER_SOCKET_PATTERN = 'ChatterSocket({proto}, {port}, RETRIES 3, {keywords});\n'
 
     def __init__(self, click_bin=CLICK_BIN,  allow_reconfigure=True, click_path=None, cwd_same_as_config=True):
         self.click_bin = click_bin

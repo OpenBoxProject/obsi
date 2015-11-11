@@ -2,10 +2,10 @@ import tornado.web
 import tornado.httpclient
 import tornado.ioloop
 import tornado.options
-from runner.handlers import (EnginesRequestHandler, StartRequestHandler, StopRequestHandler, SuspendRequestHandler,
+from handlers import (EnginesRequestHandler, StartRequestHandler, StopRequestHandler, SuspendRequestHandler,
                              ResumeRequestHandler, RunningRequestHandler, MemoryRequestHandler, CpuRequestHandler,
                              RegisterAlertUrlRequestHandler)
-from runner.config import RestServer, ENGINES
+from config import RestServer, ENGINES
 
 
 class ServerRunner(object):

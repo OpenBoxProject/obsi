@@ -1,7 +1,7 @@
 """
 A configuration and definitions file used by the EE runner server and client
 """
-from control.click_control_client import ClickControlClient
+from click_control_client import ClickControlClient
 
 ENGINES = {'click': (ClickControlClient, {})}
 

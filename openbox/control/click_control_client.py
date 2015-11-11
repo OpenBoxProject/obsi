@@ -1,9 +1,9 @@
 import socket
 import collections
 
-from control.exceptions import (UnknownHandlerOperation, ControlError, ControlSyntaxError, HandlerError,
-                                NoRouterInstalledError, NoSuchElementError, NoSuchHandlerError, PermissionDeniedError,
-                                UnimplementedCommandError)
+from control_exceptions import (UnknownHandlerOperation, ControlError, ControlSyntaxError, HandlerError,
+                        NoRouterInstalledError, NoSuchElementError, NoSuchHandlerError, PermissionDeniedError,
+                        UnimplementedCommandError)
 
 
 class ResponseCodes:
