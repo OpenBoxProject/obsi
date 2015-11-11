@@ -1,3 +1,4 @@
+import re
 import socket
 import collections
 
@@ -41,6 +42,8 @@ _EXCPTIONS_CODE_MAPPING = {
     ResponseCodes.NO_ROUTER_INSTALLED: NoRouterInstalledError
 }
 
+CHATTER_SOCKET_REGEXP = re.compile(r'ChatterSocket\(.*\)')
+CONTROL_SOCKET_REGEXP = re.compile(r'ControlSocket\(.*\)')
 
 class ClickControlClient(object):
     def __init__(self):
@@ -86,7 +89,8 @@ class ClickControlClient(object):
         return self._read_global('flatconfig')
 
     def hotswap(self, new_config):
-        self._write_global('hotconfig', new_config)
+        new_config = self._migrate_control_elements(new_config)
+        self._write_global('hotconfig', data=new_config)
 
     def elements_names(self):
         raw = self._read_global('list')
@@ -128,9 +132,14 @@ class ClickControlClient(object):
         response_code, response_msg = self._read_response()
         return response_code == ResponseCodes.OK
 
-    def write_handler(self, element_name, handler_name, params=''):
-        cmd = self._build_cmd(Commands.WRITE, element_name, handler_name, params)
+    def write_handler(self, element_name, handler_name, params='', data=''):
+        if data:
+            cmd = self._build_cmd(Commands.WRITE_DATA, element_name, handler_name, str(len(data)))
+        else:
+            cmd = self._build_cmd(Commands.WRITE, element_name, handler_name, params)
         self._write_line(cmd)
+        if data:
+            self._write_raw(data)
         response_code, response_code_msg = self._read_response()
         if response_code not in (ResponseCodes.OK, ResponseCodes.OK_BUT_WITH_WARNINGS):
             self._raise_exception(element_name, handler_name, response_code, response_code_msg)
@@ -166,8 +175,8 @@ class ClickControlClient(object):
     def _read_global(self, handler_name, params=''):
         return self.read_handler(None, handler_name, params)
 
-    def _write_global(self, handler_name, params=''):
-        self.write_handler(None, handler_name, params)
+    def _write_global(self, handler_name, params='', data=''):
+        self.write_handler(None, handler_name, params, data)
 
     def _config_requirements(self):
         reqs = self._read_global('requirements').strip()
@@ -239,6 +248,25 @@ class ClickControlClient(object):
         offset = 0
         while offset < total_length:
             offset += self._socket.send(data[offset:])
+
+    def _migrate_control_elements(self, new_config):
+        old_config = self.running_config()
+        old_control_socket = CONTROL_SOCKET_REGEXP.findall(old_config)
+        old_chatter_socket = CHATTER_SOCKET_REGEXP.findall(old_config)
+        new_control_socket = CONTROL_SOCKET_REGEXP.findall(new_config)
+        new_chatter_socket = CHATTER_SOCKET_REGEXP.findall(new_config)
+        if not new_chatter_socket and old_chatter_socket:
+            # we add the old ChatterSocket only if it is not present in the new config but was in the old
+            chatter_socket = old_chatter_socket[0] + ';\n'
+            new_config = chatter_socket + new_config
+        if not new_control_socket and old_control_socket:
+            # we add the old ControlSocket only if it is not present in the new config but was in the old
+            control_socket = old_control_socket[0] + ';\n'
+            new_config = control_socket + new_config
+
+        return new_config
+
+
 
 
 if __name__ == "__main__":
