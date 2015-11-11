@@ -10,6 +10,9 @@ class PushMessageReceiver(object):
     def __init__(self):
         self.connected = False
         self._stream = None
+        self.address = None
+        self.family = None
+        self.delayed_call = None
         self._registered_handlers = {}
 
     def register_message_handler(self, message_type, handler):
@@ -24,16 +27,35 @@ class PushMessageReceiver(object):
     def unregister_all(self):
         self._registered_handlers = {}
 
-    def connect(self, address, family=socket.AF_INET):
+    def connect(self, address, family=socket.AF_INET, retry_interval=1):
+        self.address = address
+        self.family = family
+        self.retry_interval = retry_interval
+        self._connect()
+
+    def _connect(self):
         if self.connected:
-            raise RuntimeError("Already connected")
-        stream_socket = socket.socket(family=family)
-        self._stream = IOStream(stream_socket)
-        self._stream.connect(address, self._on_connect)
+            if self.delayed_call:
+                tornado.ioloop.IOLoop.current().remove_timeout(self.delayed_call)
+                self.delayed_call = None
+            else:
+                raise RuntimeError("Already connected")
+        else:
+            self.delayed_call = tornado.ioloop.IOLoop.current().call_later(1, self._connect)
+            stream_socket = socket.socket(family=self.family)
+            self._stream = IOStream(stream_socket)
+            self._stream.connect(self.address, self._on_connect)
 
     def _on_connect(self):
         self.connected = True
+        self._stream.set_close_callback(self._on_closed)
         self._stream.read_until('\n', self._handle_greeting)
+
+    def _on_closed(self):
+        if self.connected:
+            # The other side closed us, try to reconnect
+            self.connected = False
+            self.connect(self.address, self.family)
 
     def _handle_greeting(self, greetings):
         self._stream.read_until('\n', self._handle_message)
@@ -52,25 +74,19 @@ class PushMessageReceiver(object):
 
     def close(self):
         if self._stream:
-            self._stream.close()
             self.connected = False
+            self._stream.close()
             self._stream = None
 
 if __name__ == "__main__":
     import tornado.ioloop
     receiver = PushMessageReceiver()
-    counter = 0
 
     def log_handler(msg):
-        global counter
-        counter += 1
-
-    def print_counter():
-        print counter
+        print msg
 
     receiver.register_message_handler('LOG', log_handler)
     receiver.connect(address=('127.0.0.1', 7001))
     io_loop = tornado.ioloop.IOLoop.instance()
-    io_loop.call_later(1, print_counter)
     io_loop.start()
 
