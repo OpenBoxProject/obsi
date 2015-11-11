@@ -16,10 +16,6 @@ class BaseControlRequestHandler(tornado.web.RequestHandler):
         return tornado.escape.json_decode(body)
 
     def _engine(self):
-        """
-
-        :rtype : ClickControlClient
-        """
         if not self.control.engine_set:
             raise tornado.web.HTTPError(400, reason="Execution engine not set")
         return self.control.engine
@@ -75,7 +71,10 @@ class EngineVersionRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        self._write(engine.engine_version())
+        try:
+            self._write(engine.engine_version())
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
 
 class LoadedPackagesRequestHandler(BaseControlRequestHandler):
@@ -83,7 +82,10 @@ class LoadedPackagesRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        self._write(engine.loaded_packages())
+        try:
+            self._write(engine.loaded_packages())
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
 
 class SupportedElementsRequestHandler(BaseControlRequestHandler):
@@ -91,7 +93,10 @@ class SupportedElementsRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        self._write(engine.supported_elements())
+        try:
+            self._write(engine.supported_elements())
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
 
 class ConfigRequestHandler(BaseControlRequestHandler):
@@ -99,14 +104,20 @@ class ConfigRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        self._write(engine.running_config())
+        try:
+            self._write(engine.running_config())
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
     def post(self, *args, **kwargs):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
         new_config = self._decoode_json_body()
-        engine.hotswap(new_config)
+        try:
+            engine.hotswap(new_config)
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
 
 class ListElementsRequestHandler(BaseControlRequestHandler):
@@ -114,7 +125,10 @@ class ListElementsRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        self._write(engine.elements_name())
+        try:
+            self._write(engine.elements_names())
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
 
 
 class IsReadableRequestHandler(BaseControlRequestHandler):
@@ -125,7 +139,7 @@ class IsReadableRequestHandler(BaseControlRequestHandler):
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
         try:
-            self._write(engine.is_readable(element_name, handler_name))
+            self._write(engine.is_readable_handler(element_name, handler_name))
         except ControlError as e:
             raise tornado.web.HTTPError(500, reason=e.message)
 
@@ -138,7 +152,7 @@ class IsWriteableRequestHandler(BaseControlRequestHandler):
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
         try:
-            self._write(engine.is_readable(element_name, handler_name))
+            self._write(engine.is_writeable_handler(element_name, handler_name))
         except ControlError as e:
             raise tornado.web.HTTPError(500, reason=e.message)
 
@@ -147,7 +161,7 @@ class ElementRequestHandler(BaseControlRequestHandler):
     def get(self, element_name, handler_name=None):
         element_name = tornado.escape.url_unescape(element_name)
         engine = self.control.engine
-        if not self.control.engine.connected:
+        if not engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
 
         if handler_name is None:
@@ -192,7 +206,7 @@ class SequenceRequestHandler(BaseControlRequestHandler):
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
         operations = self._decoode_json_body()
-        results = engine.operations_sequence
+        results = engine.operations_sequence(operations)
         fixed_up = OrderedDict()
         # fix up results which has exceptions\
         for k, v in results.iteritems():

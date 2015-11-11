@@ -42,8 +42,10 @@ _EXCPTIONS_CODE_MAPPING = {
     ResponseCodes.NO_ROUTER_INSTALLED: NoRouterInstalledError
 }
 
+CONNECT_RETRIES = 3
 CHATTER_SOCKET_REGEXP = re.compile(r'ChatterSocket\(.*\)')
 CONTROL_SOCKET_REGEXP = re.compile(r'ControlSocket\(.*\)')
+
 
 class ClickControlClient(object):
     def __init__(self):
@@ -51,13 +53,16 @@ class ClickControlClient(object):
         self.cotrol_socket_element_name = None
         self.protocol_version = None
         self._buffer = ''
+        self.family = None
+        self.address = None
         self._socket = None
         self.connected = False
 
     def connect(self, address, family=socket.AF_INET):
-
-        self._socket = socket.socket(family=family)
-        self._socket.connect(address)
+        self.family = family
+        self.address = address
+        self._socket = socket.socket(family=self.family)
+        self._socket.connect(self.address)
         self.connected = True
         self._read_and_parse_banner()
 
@@ -67,7 +72,7 @@ class ClickControlClient(object):
 
     def close(self):
         if self.connected:
-            self._write_line("QUIT")
+            # self._write_line("QUIT")
             self._socket.close()
             self.connected = False
             self._socket = None
@@ -91,6 +96,15 @@ class ClickControlClient(object):
     def hotswap(self, new_config):
         new_config = self._migrate_control_elements(new_config)
         self._write_global('hotconfig', data=new_config)
+        for _ in xrange(CONNECT_RETRIES):
+            try:
+                self._socket.close()
+                self.connect(self.address, self.family)
+                # try to pull the config again to make sure we are reconnected
+                self.running_config()
+                break
+            except socket.error:
+                pass
 
     def elements_names(self):
         raw = self._read_global('list')
@@ -100,6 +114,12 @@ class ClickControlClient(object):
         return elements
 
     def element_handlers(self, element_name):
+        handlers = self._element_handlers_with_attributes(element_name)
+        # each handler has the form (<handler_name>, <rw attributes>")
+        # we need only the name
+        return [name for name, attribute in handlers]
+
+    def _element_handlers_with_attributes(self, element_name):
         handlers = self.read_handler(element_name, 'handlers').strip().split('\n')
 
         # each handler has the form "<handler_name> <rw attributes>"
@@ -143,6 +163,7 @@ class ClickControlClient(object):
         response_code, response_code_msg = self._read_response()
         if response_code not in (ResponseCodes.OK, ResponseCodes.OK_BUT_WITH_WARNINGS):
             self._raise_exception(element_name, handler_name, response_code, response_code_msg)
+        return response_code
 
     def read_handler(self, element_name, handler_name, params=''):
         cmd = self._build_cmd(Commands.READ, element_name, handler_name, params)
@@ -158,19 +179,24 @@ class ClickControlClient(object):
         # Currently there is no 'smart' way in click of doing a bunch of read or write calls
         # so we just do them one after the other using the basic
         results = collections.OrderedDict()
-        for operation_type, element_name, handler_name, params in operations:
+        for operation in operations:
+            operation_type = operation['type']
+            element_name = operation['element_name']
+            handler_name = operation['handler_name']
+            params = operation.get('params', '')
             key = self._build_full_handler_name(element_name, handler_name)
             if operation_type == 'READ':
                 operation_function = self.read_handler
             elif operation_type == 'WRITE':
                 operation_function = self.write_handler
             else:
-                operation_function = lambda (en, hn, pa): UnknownHandlerOperation(
+                operation_function = lambda en, hn, pa: UnknownHandlerOperation(
                     "Unknown operation: %s" % operation_type)
             try:
                 results[key] = operation_function(element_name, handler_name, params)
             except ControlError as e:
                 results[key] = e
+        return results
 
     def _read_global(self, handler_name, params=''):
         return self.read_handler(None, handler_name, params)

@@ -3,9 +3,9 @@ import tornado.httpclient
 import tornado.ioloop
 import tornado.options
 from handlers import (EnginesRequestHandler, CloseRequestHandler, ConfigRequestHandler,
-                              ConnectRequestHandler, ElementRequestHandler, EngineVersionRequestHandler,
-                              ListElementsRequestHandler, IsReadableRequestHandler, IsWriteableRequestHandler,
-                              LoadedPackagesRequestHandler, SequenceRequestHandler, SupportedElementsRequestHandler)
+                      ConnectRequestHandler, ElementRequestHandler, EngineVersionRequestHandler,
+                      ListElementsRequestHandler, IsReadableRequestHandler, IsWriteableRequestHandler,
+                      LoadedPackagesRequestHandler, SequenceRequestHandler, SupportedElementsRequestHandler)
 from config import RestServer, ENGINES
 
 
@@ -44,17 +44,18 @@ def run(port, debug=False):
         (RestServer.Endpoints.SUPPORTED_ELEMENTS, SupportedElementsRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.CONFIG, ConfigRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.LIST_ELEMENTS, ListElementsRequestHandler, dict(control=server_control)),
+        (RestServer.Endpoints.SEQUENCE, SequenceRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.IS_READABLE, IsReadableRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.IS_WRITEABLE, IsWriteableRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.HANDLER, ElementRequestHandler, dict(control=server_control)),
         (RestServer.Endpoints.LIST_HANDLERS, ElementRequestHandler, dict(control=server_control)),
-        (RestServer.Endpoints.SEQUENCE, SequenceRequestHandler, dict(control=server_control)),
-        ], debug=debug)
+    ], debug=debug)
     application.listen(port)
     tornado.ioloop.IOLoop.current().start()
 
+
 if __name__ == "__main__":
     tornado.options.define('port', default=RestServer.PORT, type=int, help="The server's port. ")
-    tornado.options.define('debug', default=False, type=bool, help='Start the server with debug options.')
+    tornado.options.define('debug', default=RestServer.DEBUG, type=bool, help='Start the server with debug options.')
     tornado.options.parse_command_line()
     run(tornado.options.options.port, tornado.options.options.debug)

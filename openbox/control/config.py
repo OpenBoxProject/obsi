@@ -19,10 +19,8 @@ class RestServer:
         SUPPORTED_ELEMENTS = '/control/supported_elements'
         CONFIG = '/control/config'
         LIST_ELEMENTS = '/control/elements'
+        SEQUENCE = '/control/elements/sequence'
         IS_READABLE = '/control/elements/(.*)/(.*)/is_read'
         IS_WRITEABLE = '/control/elements/(.*)/(.*)/is_write'
         HANDLER = '/control/elements/(.*)/(.*)'
         LIST_HANDLERS = '/control/elements/(.*)'
-        SEQUENCE = '/control/sequence'
-
-
