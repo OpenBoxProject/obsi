@@ -86,8 +86,14 @@ class MessageResponse(Message):
     # The fields to copy from the request
     __copy_request_fields__ = ['xid']
 
+    # The class of the allowed request type
+    __request__ = MessageRequest
+
     @classmethod
     def from_request(cls, request, **kwargs):
+        if not isinstance(request, cls.__request__):
+            raise TypeError("Can create a response only from %s, and not %s" % (cls.__request__.__name__,
+                                                                                request.__class__.__name__))
         for field in cls.__copy_request_fields__:
             kwargs[field] = getattr(request, field)
         return cls(**kwargs)
@@ -107,6 +113,7 @@ class ListCapabilitiesRequest(MessageRequest):
 
 class ListCapabilitiesResponse(MessageResponse):
     __slots__ = ['xid', 'capabilities']
+    __request__ = ListCapabilitiesRequest
 
 
 class GlobalStatsRequest(MessageRequest):
@@ -115,6 +122,7 @@ class GlobalStatsRequest(MessageRequest):
 
 class GlobalStatsResponse(MessageResponse):
     __slots__ = ['xid', 'stats']
+    __request__ = GlobalStatsRequest
 
 
 class GlobalStatsReset(MessageRequest):
@@ -128,6 +136,7 @@ class ReadRequest(MessageRequest):
 class ReadResponse(MessageResponse):
     __slots__ = ['xid', 'block_id', 'read_handle', 'result']
     __copy_request_fields__ = ['xid', 'block_id', 'read_handle']
+    __request__ = ReadRequest
 
 
 class WriteRequest(MessageRequest):
@@ -137,14 +146,16 @@ class WriteRequest(MessageRequest):
 class WriteResponse(MessageResponse):
     __slots__ = ['xid', 'block_id', 'write_handle']
     __copy_request_fields__ = ['xid', 'block_id', 'write_handle']
+    __request__ = WriteRequest
 
 
-class SetProcessingGraph(MessageRequest):
+class SetProcessingGraphRequest(MessageRequest):
     __slots__ = ['xid', 'required_modules', 'block', 'connectors']
 
 
-class SetLogServer(MessageRequest):
-    __slots__ = ['xid', 'address', 'port']
+class SetProcessingGraphResponse(MessageResponse):
+    __slots__ = ['xid']
+    __request__ = SetProcessingGraphRequest
 
 
 class BarrierRequest(MessageRequest):
@@ -155,13 +166,18 @@ class Error(MessageResponse):
     __slots__ = ['xid', 'error_type', 'error_subtype', 'message', 'extended_message']
 
 
-class SetStorageServer(MessageRequest):
-    __slots__ = ['xid', 'address', 'port']
-
-
-class AddCustomModule(MessageRequest):
+class AddCustomModuleRequest(MessageRequest):
     __slots__ = ['xid', 'module_name', 'module_content', 'content_type', 'content_transfer_encoding', 'translation']
 
 
-class RemoveCustomModule(MessageRequest):
+class AddCustomModuleResponse(MessageResponse):
+    __slots__ = ['xid']
+    __request__ = AddCustomModuleRequest
+
+
+class RemoveCustomModuleRequest(MessageRequest):
     __slots__ = ['xid', 'module_name']
+
+
+class RemoveCustomModuleResponse(MessageResponse):
+    __slots__ = ['xid']
