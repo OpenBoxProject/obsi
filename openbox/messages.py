@@ -71,6 +71,10 @@ class Message(object):
     def __str__(self):
         return self.to_json()
 
+    @property
+    def type(self):
+        return self.__class__.__name__
+
 
 class MessageRequest(Message):
     """
