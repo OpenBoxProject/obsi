@@ -9,11 +9,10 @@ import psutil
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
 from tornado.ioloop import IOLoop
-from tornado import httpclient
-from tornado import gen
-from tornado import options
+from tornado import httpclient, gen, options, locks
 
 import config
+import rest_server
 from watchdog import ProcessWatchdog
 from push_message_receiver import PushMessageReceiver
 from message_router import MessageRouter
@@ -49,6 +48,8 @@ class Manager(object):
         self._http_client = httpclient.HTTPClient()
         self._alert_registered = False
         self.id = getnode()  # A unique identifier of this OBSI
+        self._engine_running = False
+        self._engine_running_lock = locks.Lock()
 
     def start(self):
         app_log.info("Starting components")
@@ -67,7 +68,7 @@ class Manager(object):
         self._start_io_loop()
 
     def _start_runner(self):
-        app_log.info("Starting EE Runner")
+        app_log.info("Starting EE Runner on port {port}".format(port=config.Runner.Rest.PORT))
         self._runner_process = _start_remote_rest_server(config.Runner.Rest.BIN, config.Runner.Rest.PORT,
                                                          config.Runner.Rest.DEBUG)
         if self._runner_process.is_running() and self._rest_server_listening(config.Runner.Rest.BASE_URI):
@@ -90,6 +91,7 @@ class Manager(object):
         else:
             app_log.error("{engine} failed to start".format(engine=config.Engine.NAME))
             self.exit(1)
+        self._engine_running = True
         self._alert_registered = self._register_alert_uri()
         app_log.info("Alert Registration status: {status}".format(status=self._alert_registered))
 
@@ -101,7 +103,7 @@ class Manager(object):
             while self._control_process.is_running():
                 self._control_process.kill()
 
-        exit(1)
+        exit(exit_code)
 
     def _rest_server_listening(self, base_uri):
         for _ in xrange(config.CONNECTION_RETRIES):
@@ -160,7 +162,7 @@ class Manager(object):
             return False
 
     def _start_control(self):
-        app_log.info("Starting EE Control")
+        app_log.info("Starting EE Control on port {port}".format(port=config.Control.Rest.PORT))
         self._control_process = _start_remote_rest_server(config.Control.Rest.BIN, config.Control.Rest.PORT,
                                                           config.Control.Rest.DEBUG)
         if self._control_process.is_running() and self._rest_server_listening(config.Control.Rest.BASE_URI):
@@ -239,8 +241,8 @@ class Manager(object):
         # TODO: add real code
 
     def _start_local_rest_server(self):
-        app_log.info("Starting MessageSender")
-        # TODO: add real code
+        app_log.info("Starting local REST server on port {port}".format(port=config.RestServer.PORT))
+        rest_server.start(self)
 
     def _send_hello_message(self):
         app_log.info("Creating and sending Hello Message")
@@ -249,6 +251,12 @@ class Manager(object):
     def _start_io_loop(self):
         app_log.info("Starting the IOLoop")
         IOLoop.current().start()
+
+    @gen.coroutine
+    def handle_runner_alert(self, errors):
+        with (yield self._engine_running_lock.acquire()):
+            self._engine_running = False
+        app_log.error("Engine stopped working: {errors}".format(errors=errors))
 
 
 def main():

@@ -17,11 +17,12 @@ class Watchdog:
 
 class RestServer:
     DEBUG = True
-    PORT = 9000
+    PORT = 3636
     BASE_URI = 'http://localhost:{port}'.format(port=PORT)
 
     class Endpoints:
         RUNNER_ALERT = '/obsi/runner_alert'
+        INGRESS_MESSAGES = '/message/(.*)'
 
 
 class Engine:
