@@ -211,10 +211,13 @@ class Manager(object):
         self._watchdog.register_process(self._control_process, self._process_died)
         self._watchdog.start()
 
+    @gen.coroutine
     def _process_died(self, process):
         if process == self._runner_process:
             app_log.error("EE Runner REST server has died")
-            # TODO: Add real handling
+            with (yield self._engine_running_lock.acquire()):
+                self._engine_running = False
+            # TODO: add recovering logic
         elif process == self._control_process:
             app_log.error("EE Control REST server has died")
             # TODO: Add real handling
