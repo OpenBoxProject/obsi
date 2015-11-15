@@ -159,7 +159,7 @@ class WriteResponse(MessageResponse):
 
 
 class SetProcessingGraphRequest(MessageRequest):
-    __slots__ = ['xid', 'required_modules', 'block', 'connectors']
+    __slots__ = ['xid', 'required_modules', 'blocks', 'connectors']
 
 
 class SetProcessingGraphResponse(MessageResponse):
