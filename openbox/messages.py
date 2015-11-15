@@ -47,18 +47,23 @@ class Message(object):
                 raise TypeError("Field %s, not given" % field)
 
     @classmethod
-    def from_json(cls, raw_data):
-        obj = json.loads(raw_data)
+    def from_dict(cls, obj):
         try:
             msg_type = obj.pop('type')
+            # noinspection PyUnresolvedReferences
             clazz = cls.messages_registry[msg_type]
         except KeyError:
-            raise MessageParsingError("Unknown Message Type" % raw_data)
+            raise MessageParsingError("Unknown Message Type" % repr(obj))
 
         try:
             return clazz(**obj)
         except TypeError as e:
             raise MessageParsingError(e.message)
+
+    @classmethod
+    def from_json(cls, raw_data):
+        obj = json.loads(raw_data)
+        return cls.from_dict(obj)
 
     def to_dict(self):
         return dict((field, getattr(self, field)) for field in self.__slots__)
