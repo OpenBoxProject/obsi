@@ -9,7 +9,7 @@ class BaseControlRequestHandler(tornado.web.RequestHandler):
     def initialize(self, control):
         self.control = control
 
-    def _decoode_json_body(self):
+    def _decode_json_body(self):
         body = self.request.body
         if not body:
             raise tornado.web.HTTPError(400, reason="Received no body content")
@@ -44,7 +44,7 @@ class EnginesRequestHandler(BaseControlRequestHandler):
 class ConnectRequestHandler(BaseControlRequestHandler):
     def post(self, *args, **kwargs):
         engine = self.control.engine
-        params = self._decoode_json_body()
+        params = self._decode_json_body()
         try:
             address = params['address']
             socket_type = params['type']
@@ -113,7 +113,7 @@ class ConfigRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        new_config = self._decoode_json_body()
+        new_config = self._decode_json_body()
         try:
             engine.hotswap(new_config)
         except ControlError as e:
@@ -205,7 +205,7 @@ class SequenceRequestHandler(BaseControlRequestHandler):
         engine = self.control.engine
         if not self.control.engine.connected:
             raise tornado.web.HTTPError(400, reason="Not connected")
-        operations = self._decoode_json_body()
+        operations = self._decode_json_body()
         results = engine.operations_sequence(operations)
         fixed_up = OrderedDict()
         # fix up results which has exceptions\

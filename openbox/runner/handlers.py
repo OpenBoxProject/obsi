@@ -8,7 +8,7 @@ class BaseRunnerRequestHandler(tornado.web.RequestHandler):
     def initialize(self, runner):
         self.runner = runner
 
-    def _decoode_json_body(self):
+    def _decode_json_body(self):
         body = self.request.body
         if not body:
             raise tornado.web.HTTPError(400, reason="Received no body content")
@@ -42,7 +42,7 @@ class EnginesRequestHandler(BaseRunnerRequestHandler):
 
 class StartRequestHandler(BaseRunnerRequestHandler):
     def post(self, *args, **kwargs):
-        raw_parameters = self._decoode_json_body()
+        raw_parameters = self._decode_json_body()
         parameters = self._canonize_start_parameters(raw_parameters)
         engine = self._engine()
         try:
@@ -130,7 +130,7 @@ class InstallPackageRequestHandler(BaseRunnerRequestHandler):
     def post(self):
         try:
             engine = self._engine()
-            package = self._decoode_json_body()
+            package = self._decode_json_body()
             engine.install_package(package['name'], package['data'].decode('base64'))
         except EngineClientError as e:
             raise tornado.web.HTTPError(400, reason=e.message)
