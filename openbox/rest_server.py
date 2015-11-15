@@ -3,7 +3,7 @@ The REST Server used to get messages
 """
 import config
 from tornado.web import Application
-from handlers import (RunnerAlertRequestHandler, MessageRequestHandler)
+from request_handlers import (RunnerAlertRequestHandler, MessageRequestHandler)
 
 
 def start(manager):
