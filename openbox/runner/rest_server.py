@@ -3,6 +3,7 @@ import tornado.web
 import tornado.httpclient
 import tornado.ioloop
 import tornado.options
+from tornado.escape import json_encode
 
 from handlers import (EnginesRequestHandler, StartRequestHandler, StopRequestHandler, SuspendRequestHandler,
                       ResumeRequestHandler, RunningRequestHandler, MemoryRequestHandler, CpuRequestHandler,
@@ -38,7 +39,7 @@ class ServerRunner(object):
         if not self.url or not self.engine_set or self.engine.is_running:
             return
         errors = self.engine.get_errors()
-        self._http_client.fetch(self.url, method='POST', body=errors)
+        self._http_client.fetch(self.url, method='POST', body=json_encode(errors))
 
 
 def run(port, debug=False):
