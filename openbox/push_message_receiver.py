@@ -4,6 +4,7 @@ An implementation of an Execution Engine Push Message Receiver.
 import json
 import socket
 from tornado.iostream import IOStream
+from tornado.ioloop import IOLoop
 
 
 class PushMessageReceiver(object):
@@ -36,12 +37,12 @@ class PushMessageReceiver(object):
     def _connect(self):
         if self.connected:
             if self.delayed_call:
-                tornado.ioloop.IOLoop.current().remove_timeout(self.delayed_call)
+                IOLoop.current().remove_timeout(self.delayed_call)
                 self.delayed_call = None
             else:
                 raise RuntimeError("Already connected")
         else:
-            self.delayed_call = tornado.ioloop.IOLoop.current().call_later(1, self._connect)
+            self.delayed_call = IOLoop.current().call_later(1, self._connect)
             stream_socket = socket.socket(family=self.family)
             self._stream = IOStream(stream_socket)
             self._stream.connect(self.address, self._on_connect)
@@ -79,7 +80,6 @@ class PushMessageReceiver(object):
             self._stream = None
 
 if __name__ == "__main__":
-    import tornado.ioloop
     receiver = PushMessageReceiver()
 
     def log_handler(msg):
@@ -87,6 +87,4 @@ if __name__ == "__main__":
 
     receiver.register_message_handler('LOG', log_handler)
     receiver.connect(address=('127.0.0.1', 7001))
-    io_loop = tornado.ioloop.IOLoop.instance()
-    io_loop.start()
-
+    IOLoop.current().start()

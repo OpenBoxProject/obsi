@@ -7,6 +7,8 @@ import runner.config as runner_config
 import control.config as control_config
 
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+CONNECTION_RETRIES = 3
+INTERVAL_BETWEEN_CONNECTION_TRIES = 1
 
 
 class Watchdog:

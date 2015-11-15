@@ -1,4 +1,6 @@
-from tornado.ioloop import IOLoop, PeriodicCallback
+import logging
+from tornado.ioloop import PeriodicCallback
+from tornado.log import app_log
 
 
 class ProcessWatchdog(object):

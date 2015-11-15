@@ -1,16 +1,23 @@
+#!/usr/bin/env python
 """
 An OBSI's Manager.
 """
-from tornado.ioloop import IOLoop
-import config
+import time
+import sys
+
 import psutil
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
+from tornado.ioloop import IOLoop
 from tornado import httpclient
 from tornado import gen
+from tornado import options
+
+import config
 from watchdog import ProcessWatchdog
 from push_message_receiver import PushMessageReceiver
 from message_router import MessageRouter
+from uuid import getnode
 
 
 class ManagerState:
@@ -21,6 +28,13 @@ class ManagerState:
 
 def _get_full_uri(base, endpoint):
     return '{base}{endpoint}'.format(base=base, endpoint=endpoint)
+
+
+def _start_remote_rest_server(bin_path, port, debug):
+    # use the current interpreter to run the remote servers
+    # this may be an issue with virtualenv or anaconda
+    cmd = [sys.executable, bin_path, '--port={port}'.format(port=port), '--debug={debug}'.format(debug=debug)]
+    return psutil.Popen(cmd)
 
 
 class Manager(object):
@@ -34,6 +48,7 @@ class Manager(object):
         self.state = ManagerState.EMPTY
         self._http_client = httpclient.HTTPClient()
         self._alert_registered = False
+        self.id = getnode()  # A unique identifier of this OBSI
 
     def start(self):
         app_log.info("Starting components")
@@ -49,42 +64,59 @@ class Manager(object):
         app_log.info("All components active")
         self.state = ManagerState.INITIALIZED
         self._send_hello_message()
-        app_log.info("Starting IOLoop")
         self._start_io_loop()
 
     def _start_runner(self):
         app_log.info("Starting EE Runner")
-        self._runner_process = self._start_remote_rest_server(config.Runner.Rest.BIN, config.Runner.Rest.PORT,
-                                                              config.Runner.Rest.DEBUG)
-        if self._runner_process.is_running():
+        self._runner_process = _start_remote_rest_server(config.Runner.Rest.BIN, config.Runner.Rest.PORT,
+                                                         config.Runner.Rest.DEBUG)
+        if self._runner_process.is_running() and self._rest_server_listening(config.Runner.Rest.BASE_URI):
             app_log.info("EERunner REST Server running")
         else:
             app_log.error("EERunner REST Server not running")
-            exit(1)
+            self.exit(1)
         if self._is_engine_supported(_get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.ENGINES)):
             app_log.info("{engine} supported by EE Runner.".format(engine=config.Engine.NAME))
         else:
             app_log.error("{engine} is not supported by EE Runner".format(engine=config.Engine.NAME))
-            exit(1)
+            self.exit(1)
         if self._set_engine(_get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.ENGINES)):
             app_log.info("{engine} set".format(engine=config.Engine.NAME))
         else:
             app_log.error("{engine} not set by EERunner".format(engine=config.Engine.NAME))
-            exit(1)
+            self.exit(1)
         if self._start_engine():
             app_log.info("{engine} started".format(engine=config.Engine.NAME))
         else:
             app_log.error("{engine} failed to start".format(engine=config.Engine.NAME))
-            exit(1)
+            self.exit(1)
         self._alert_registered = self._register_alert_uri()
-        app_log.info("Alert Registeration status: {status}".format(status=self._alert_registered))
+        app_log.info("Alert Registration status: {status}".format(status=self._alert_registered))
 
-    def _start_remote_rest_server(self, bin_path, port, debug):
-        cmd = [bin_path, '--debug', str(port), '--port', str(debug)]
-        return psutil.Popen(cmd)
+    def exit(self, exit_code):
+        if self._runner_process:
+            while self._runner_process.is_running():
+                self._runner_process.kill()
+        if self._control_process:
+            while self._control_process.is_running():
+                self._control_process.kill()
+
+        exit(1)
+
+    def _rest_server_listening(self, base_uri):
+        for _ in xrange(config.CONNECTION_RETRIES):
+            try:
+                self._http_client.fetch(base_uri)
+                return True
+            except httpclient.HTTPError:
+                return True
+            except Exception:
+                time.sleep(config.INTERVAL_BETWEEN_CONNECTION_TRIES)
+
+        return False
 
     def _is_engine_supported(self, uri):
-        engine_name = config.Engine.NAME,
+        engine_name = config.Engine.NAME
         try:
             response = self._http_client.fetch(uri)
             return engine_name in json_decode(response.body)
@@ -118,9 +150,10 @@ class Manager(object):
             return False
 
     def _register_alert_uri(self):
-        uri = _get_full_uri(config.RestServer.BASE_URI, config.RestServer.Endpoints.RUNNER_ALERT)
+        uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.REGISTER_ALERT_URL)
+        alert_uri = _get_full_uri(config.RestServer.BASE_URI, config.RestServer.Endpoints.RUNNER_ALERT)
         try:
-            self._http_client.fetch(uri, method='POST', body=url_escape(uri))
+            self._http_client.fetch(uri, method='POST', body=url_escape(alert_uri))
             return True
         except httpclient.HTTPError as e:
             app_log.error(e.response)
@@ -128,9 +161,9 @@ class Manager(object):
 
     def _start_control(self):
         app_log.info("Starting EE Control")
-        self._control_process = self._start_remote_rest_server(config.Control.Rest.BIN, config.Control.Rest.PORT,
-                                                               config.Control.Rest.DEBUG)
-        if self._control_process.is_running():
+        self._control_process = _start_remote_rest_server(config.Control.Rest.BIN, config.Control.Rest.PORT,
+                                                          config.Control.Rest.DEBUG)
+        if self._control_process.is_running() and self._rest_server_listening(config.Control.Rest.BASE_URI):
             app_log.info("EEControl REST Server running")
         else:
             app_log.error("EEControl REST Server not running")
@@ -219,6 +252,7 @@ class Manager(object):
 
 
 def main():
+    options.parse_command_line()
     manager = Manager()
     manager.start()
 

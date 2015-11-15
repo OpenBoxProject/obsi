@@ -1,7 +1,7 @@
 import tornado.web
 import tornado.escape
 import config
-from runner.runner_exceptions import EngineClientError
+from runner_exceptions import EngineClientError
 
 
 class BaseRunnerRequestHandler(tornado.web.RequestHandler):
