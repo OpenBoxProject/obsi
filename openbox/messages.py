@@ -184,9 +184,9 @@ class AddCustomModuleResponse(MessageResponse):
     __request__ = AddCustomModuleRequest
 
 
-# class RemoveCustomModuleRequest(MessageRequest):
-#     __slots__ = ['xid', 'module_name']
-#
-#
-# class RemoveCustomModuleResponse(MessageResponse):
-#     __slots__ = ['xid']
+class RemoveCustomModuleRequest(MessageRequest):
+    __slots__ = ['xid', 'module_name']
+
+
+class RemoveCustomModuleResponse(MessageResponse):
+    __slots__ = ['xid']

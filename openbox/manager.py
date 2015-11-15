@@ -266,7 +266,7 @@ class Manager(object):
         app_log.info("Creating and sending Hello Message")
         while True:
             hello_message = messages.Hello(dpid=self.obsi_id, version=config.OPENBOX_VERSION,
-                                           capabilities=self._build_capabilities())
+                                           capabilities=self.get_capabilities())
             received = yield self.message_sender.send_message_ignore_response(hello_message)
             if received:
                 break
@@ -274,7 +274,7 @@ class Manager(object):
                 app_log.error("Hello message received an error response from OBC")
                 yield gen.sleep(config.Manager.INTERVAL_BETWEEN_CONNECTION_TRIES)
 
-    def _build_capabilities(self):
+    def get_capabilities(self):
         proto_messages = []
         if config.Engine.Capabilities.MODULE_INSTALLATION:
             proto_messages.append(messages.AddCustomModuleRequest.__name__)
