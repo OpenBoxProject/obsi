@@ -14,6 +14,7 @@ from tornado import httpclient, gen, options, locks
 from click_configuration_builder import ClickConfigurationBuilder
 
 import config
+from message_handler import MessageHandler
 from message_sender import MessageSender
 import messages
 import rest_server
@@ -47,7 +48,8 @@ class Manager(object):
         self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
         self.push_messages_receiver = PushMessageReceiver()
         self.configuration_builder = ClickConfigurationBuilder()
-        self.message_router = MessageRouter(self._default_message_handler)
+        self.message_handler = MessageHandler(self)
+        self.message_router = MessageRouter(self.message_handler.default_message_handler)
         self.message_sender = MessageSender()
         self.state = ManagerState.EMPTY
         self._http_client = httpclient.HTTPClient()
@@ -242,7 +244,8 @@ class Manager(object):
 
     def _register_messages_handler(self):
         app_log.info("Registering handlers for messages")
-        # TODO: add real code
+        for message, handler in self.message_handler.registered_message_handlers.iteritems():
+            self.message_router.register_message_handler(message, handler)
 
     def _start_local_rest_server(self):
         app_log.info("Starting local REST server on port {port}".format(port=config.RestServer.PORT))
@@ -295,10 +298,6 @@ class Manager(object):
         with (yield self._engine_running_lock.acquire()):
             self._engine_running = False
         app_log.error("Engine stopped working: {errors}".format(errors=errors))
-
-    @gen.coroutine
-    def _default_message_handler(self, message):
-        app_log.info("Received message from OBC without a handler: {message}".format(message=message))
 
 
 def main():
