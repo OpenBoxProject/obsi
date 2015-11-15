@@ -2,6 +2,7 @@ import glob
 import psutil
 import subprocess
 import os
+import time
 from runner_exceptions import EngineClientError
 
 
@@ -24,6 +25,8 @@ class ClickRunnerClient(object):
         self.nthreads = None
         self._process = None
         self._error_messages = None
+        self._last_measurement_time = None
+        self._startup_time = None
 
     def start(self, processing_graph=None, control_socket_type=None, control_socket_endpoint=None,
               nthreads=None, push_messages_type=None, push_messages_endpoint=None, push_messages_channel=None):
@@ -50,7 +53,9 @@ class ClickRunnerClient(object):
         self._run()
         if self.is_running():
             # The cpu percent is calculated between calls, so let's do the first call on startup
-            self.cpu_percent()
+            self._startup_time = time.time()
+            self._process.cpu_percent()
+            self._last_measurement_time = time.time()
             return True
         else:
             return False
@@ -164,7 +169,11 @@ class ClickRunnerClient(object):
     def cpu_percent(self):
         if not self.is_running():
             raise EngineClientError("Process isn't running")
-        return self._process.cpu_percent()
+        cpu_percent = self._process.cpu_percent()
+        current_time = time.time()
+        duration = current_time - self._last_measurement_time
+        self._last_measurement_time = current_time
+        return cpu_percent, duration
 
     def cpu_count(self, logical=True):
         return psutil.cpu_count(logical)
@@ -173,6 +182,12 @@ class ClickRunnerClient(object):
         if not self.is_running():
             raise EngineClientError("Process isn't running")
         return self._process.num_threads()
+
+    def uptime(self):
+        if not self.is_running():
+            raise EngineClientError("Process isn't running")
+        current_time = time.time()
+        return current_time - self._startup_time
 
     def _threads(self):
         if not self.is_running():
@@ -210,7 +225,6 @@ class ClickRunnerClient(object):
 
 if __name__ == "__main__":
     # testing
-    import time
 
     client = ClickRunnerClient()
     click_config = r'''require(package "openbox");

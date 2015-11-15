@@ -58,6 +58,8 @@ class Manager(object):
         self._engine_running = False
         self._engine_running_lock = locks.Lock()
         self._keep_alive_periodic_callback = None
+        self._avg_cpu = 0
+        self._avg_duration = 0
 
     def start(self):
         app_log.info("Starting components")
@@ -298,6 +300,31 @@ class Manager(object):
         with (yield self._engine_running_lock.acquire()):
             self._engine_running = False
         app_log.error("Engine stopped working: {errors}".format(errors=errors))
+
+    @gen.coroutine
+    def get_engine_global_stats(self):
+        client = httpclient.AsyncHTTPClient()
+        memory_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.MEMORY)
+        cpu_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.CPU)
+        uptime_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.UPTIME)
+
+        memory, cpu, uptime = yield [client.fetch(memory_uri), client.fetch(cpu_uri), client.fetch(uptime_uri)]
+        memory, cpu, uptime = json_decode(memory.body), json_decode(cpu.body), json_decode(uptime.body)
+
+        cpu_count = cpu['cpu_count']
+        current_load = cpu['cpu_percent'] / 100.0 / cpu_count
+        duration = cpu['measurement_time']
+        self._avg_cpu = (current_load * duration + self._avg_cpu * self._avg_duration) / (duration + self._avg_duration)
+        self._avg_duration += duration
+        stats = dict(memory_rss=memory['rss'], memory_vms=memory['vms'], memory_percent=memory['percent']/100.0,
+                     cpus=cpu_count, current_load=current_load, avg_load = self._avg_cpu,
+                     avg_minutes=self._avg_duration/60.0, uptime=uptime['uptime'])
+        raise gen.Return(stats)
+
+    @gen.coroutine
+    def reset_engine_global_stats(self):
+        self._avg_cpu = 0
+        self._avg_duration = 0
 
 
 def main():

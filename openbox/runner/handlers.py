@@ -111,9 +111,20 @@ class CpuRequestHandler(BaseRunnerRequestHandler):
             cpu_count = engine.cpu_count()
             nthreads = engine.num_threads()
             cpu_times = engine.cpu_times()
-            cpu_percent = engine.cpu_percent()
+            cpu_percent, measurement_time = engine.cpu_percent()
             self._write(dict(cpu_count=cpu_count, nthreads=nthreads, cpu_user_time=cpu_times.user,
-                             cpu_system_time=cpu_times.system, cpu_percent=cpu_percent))
+                             cpu_system_time=cpu_times.system, cpu_percent=cpu_percent,
+                             measurement_time=measurement_time))
+        except EngineClientError as e:
+            raise tornado.web.HTTPError(400, reason=e.message)
+
+
+class UptimeRequestHandler(BaseRunnerRequestHandler):
+    def get(self, *args, **kwargs):
+        try:
+            engine = self._engine()
+            uptime = engine.uptime()
+            self._write(dict(uptime=uptime))
         except EngineClientError as e:
             raise tornado.web.HTTPError(400, reason=e.message)
 

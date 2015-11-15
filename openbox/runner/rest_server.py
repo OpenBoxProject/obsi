@@ -7,7 +7,7 @@ from tornado.escape import json_encode
 
 from handlers import (EnginesRequestHandler, StartRequestHandler, StopRequestHandler, SuspendRequestHandler,
                       ResumeRequestHandler, RunningRequestHandler, MemoryRequestHandler, CpuRequestHandler,
-                      RegisterAlertUrlRequestHandler, InstallPackageRequestHandler)
+                      RegisterAlertUrlRequestHandler, InstallPackageRequestHandler, UptimeRequestHandler)
 from config import RestServer, ENGINES
 
 
@@ -53,6 +53,7 @@ def run(port, debug=False):
         (RestServer.Endpoints.RUNNING, RunningRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.MEMORY, MemoryRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.CPU, CpuRequestHandler, dict(runner=server_runner)),
+        (RestServer.Endpoints.UPTIME, UptimeRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.INSTALL, InstallPackageRequestHandler, dict(runner=server_runner)),
         (RestServer.Endpoints.REGISTER_ALERT_URL, RegisterAlertUrlRequestHandler, dict(runner=server_runner)),
     ], debug=debug)

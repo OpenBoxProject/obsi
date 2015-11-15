@@ -46,7 +46,7 @@ class MessageHandler(object):
     def handle_global_stats_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
         stats = yield self.manager.get_engine_global_stats()
-        response = messages.GlobalStatsResponse.from_request(message, stats)
+        response = messages.GlobalStatsResponse.from_request(message, stats=stats)
         yield self.manager.message_sender.send_message_ignore_response(response)
         # TODO: add error handling
 

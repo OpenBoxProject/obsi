@@ -22,7 +22,7 @@ class Manager:
 
 class KeepAlive:
     # The interval in milliseconds between KeepAlive messages
-    INTERVAL = 1 * 1000
+    INTERVAL = 10 * 1000
 
 
 class OpenBoxController:

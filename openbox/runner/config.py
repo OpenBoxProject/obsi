@@ -23,5 +23,7 @@ class RestServer:
         RUNNING = '/runner/running'
         MEMORY = '/runner/memory'
         CPU = '/runner/cpu'
+        UPTIME = '/runner/uptime'
         INSTALL = '/runner/install_package'
         REGISTER_ALERT_URL = '/runner/register_alert_url'
+
