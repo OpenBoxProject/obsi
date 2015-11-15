@@ -9,11 +9,15 @@ import control.config as control_config
 # The base directory for all OBSI related code
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
 
-# The number of attempts for checking if a remote REST server is listening
-CONNECTION_RETRIES = 3
+OPENBOX_VERSION = '1.0'
 
-# The interval in seconds between tries for a check if a remote REST server is listening
-INTERVAL_BETWEEN_CONNECTION_TRIES = 1
+
+class Manager:
+    # The number of attempts for checking if a remote REST server is listening
+    CONNECTION_RETRIES = 5
+
+    # The interval in seconds between tries for a check if a remote REST server is listening
+    INTERVAL_BETWEEN_CONNECTION_TRIES = 1
 
 
 class KeepAlive:
@@ -61,6 +65,11 @@ timed_source -> chatter_msg -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_
                                                  channel=PUSH_MESSAGES_CHANNEL,
                                                  control_type=CONTROL_SOCKET_TYPE,
                                                  control_endpoint=CONTROL_SOCKET_ENDPOINT)
+
+    class Capabilities:
+        MODULE_INSTALLATION = True
+        MODULE_REMOVAL = False
+        COMPLEX_MATCH = False
 
 
 class Runner:

@@ -1,9 +1,11 @@
 """
 Send messages to OBC
 """
+import socket
+
 from tornado import gen
 from tornado.queues import Queue
-from tornado.httpclient import AsyncHTTPClient
+from tornado.httpclient import AsyncHTTPClient, HTTPError
 
 import config
 
@@ -21,4 +23,14 @@ class MessageSender(object):
             user_agent='OBSI',
             headers={'Content-Type': 'application/json'},
             body=message.to_json())
+
+    @gen.coroutine
+    def send_message_ignore_response(self, message):
+        try:
+            response = yield self.send_message(message)
+            raise gen.Return(True)
+        except HTTPError:
+            raise gen.Return(False)
+        except socket.error:
+            raise gen.Return(False)
 

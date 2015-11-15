@@ -11,6 +11,7 @@ from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
 from tornado.ioloop import IOLoop, PeriodicCallback
 from tornado import httpclient, gen, options, locks
+from click_configuration_builder import ClickConfigurationBuilder
 
 import config
 from message_sender import MessageSender
@@ -45,7 +46,7 @@ class Manager(object):
         self._control_process = None
         self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
         self.push_messages_receiver = PushMessageReceiver()
-        self.configuration_builder = None
+        self.configuration_builder = ClickConfigurationBuilder()
         self.message_router = MessageRouter(self._default_message_handler)
         self.message_sender = MessageSender()
         self.state = ManagerState.EMPTY
@@ -111,7 +112,7 @@ class Manager(object):
         exit(exit_code)
 
     def _rest_server_listening(self, base_uri):
-        for _ in xrange(config.CONNECTION_RETRIES):
+        for _ in xrange(config.Manager.CONNECTION_RETRIES):
             try:
                 self._http_client.fetch(base_uri)
                 return True
@@ -120,7 +121,7 @@ class Manager(object):
             except KeyboardInterrupt:
                 raise
             except socket.error:
-                time.sleep(config.INTERVAL_BETWEEN_CONNECTION_TRIES)
+                time.sleep(config.Manager.INTERVAL_BETWEEN_CONNECTION_TRIES)
 
         return False
 
@@ -250,15 +251,37 @@ class Manager(object):
 
     @gen.coroutine
     def _send_keep_alive(self):
-        try:
-            # We ignore the response
-            response = yield self.message_sender.send_message(messages.KeepAlive(dpid=self.obsi_id))
-        except socket.error:
-            app_log.error("KeepAlive connection refused by OBC")
+        received = yield self.message_sender.send_message_ignore_response(messages.KeepAlive(dpid=self.obsi_id))
+        if not received:
+            app_log.error('KeepAlive message received an error response from OBC')
 
+    @gen.coroutine
     def _send_hello_message(self):
         app_log.info("Creating and sending Hello Message")
-        # TODO: add real code
+        while True:
+            hello_message = messages.Hello(dpid=self.obsi_id, version=config.OPENBOX_VERSION,
+                                           capabilities=self._build_capabilities())
+            received = yield self.message_sender.send_message_ignore_response(hello_message)
+            if received:
+                break
+            else:
+                app_log.error("Hello message received an error response from OBC")
+                yield gen.sleep(config.Manager.INTERVAL_BETWEEN_CONNECTION_TRIES)
+
+    def _build_capabilities(self):
+        proto_messages = []
+        if config.Engine.Capabilities.MODULE_INSTALLATION:
+            proto_messages.append(messages.AddCustomModuleRequest.__name__)
+        if config.Engine.Capabilities.MODULE_REMOVAL:
+            proto_messages.append(messages.RemoveCustomModuleRequest.__name__)
+        processing_blocks = self.configuration_builder.processing_blocks
+        match_fields = self.configuration_builder.match_fields
+        complex_match = config.Engine.Capabilities.COMPLEX_MATCH
+        protocol_analyser_protocols = self.configuration_builder.protocol_analyser_protocols
+
+        return dict(proto_messages=proto_messages, processing_blocks=processing_blocks,
+                    match_fields=match_fields, complex_match=complex_match,
+                    protocol_analyser_protocols=protocol_analyser_protocols)
 
     def _start_io_loop(self):
         app_log.info("Starting the IOLoop")
