@@ -6,9 +6,26 @@ import socket
 import runner.config as runner_config
 import control.config as control_config
 
+# The base directory for all OBSI related code
 BASE_PATH = os.path.dirname(os.path.realpath(__file__))
+
+# The number of attempts for checking if a remote REST server is listening
 CONNECTION_RETRIES = 3
+
+# The interval in seconds between tries for a check if a remote REST server is listening
 INTERVAL_BETWEEN_CONNECTION_TRIES = 1
+
+
+class KeepAlive:
+    # The interval in milliseconds between KeepAlive messages
+    INTERVAL = 1 * 1000
+
+
+class OpenBoxController:
+    HOSTNAME = "localhost"
+    PORT = 3637
+    BASE_URI = "http://{host}:{port}".format(host=HOSTNAME, port=PORT)
+    MESSAGE_ENDPOINT_PATTERN = BASE_URI + "/message/{message}"
 
 
 class Watchdog:
@@ -22,7 +39,7 @@ class RestServer:
 
     class Endpoints:
         RUNNER_ALERT = '/obsi/runner_alert'
-        INGRESS_MESSAGES = '/message/(.*)'
+        MESSAGE = '/message/(.*)'
 
 
 class Engine:

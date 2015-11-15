@@ -4,8 +4,9 @@ from messages import MessageMeta, Message
 
 
 class MessageRouter(object):
-    def __init__(self):
+    def __init__(self, default_handler=None):
         self._queue = Queue()
+        self.default_handler = default_handler
         self._message_handlers = {}
         self._working = False
 
@@ -28,6 +29,9 @@ class MessageRouter(object):
                 # TODO: Maybe we need to add special handling for BarrierRequest
                 handler = self._message_handlers[message.type]
                 yield handler(message)
+            except KeyError:
+                if self.default_handler:
+                    yield self.default_handler(message)
             finally:
                 self._queue.task_done()
 

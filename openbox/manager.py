@@ -2,16 +2,19 @@
 """
 An OBSI's Manager.
 """
+import socket
 import time
 import sys
 
 import psutil
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
-from tornado.ioloop import IOLoop
+from tornado.ioloop import IOLoop, PeriodicCallback
 from tornado import httpclient, gen, options, locks
 
 import config
+from message_sender import MessageSender
+import messages
 import rest_server
 from watchdog import ProcessWatchdog
 from push_message_receiver import PushMessageReceiver
@@ -40,16 +43,18 @@ class Manager(object):
     def __init__(self):
         self._runner_process = None
         self._control_process = None
-        self._watchdog = None
-        self.push_messages_receiver = None
+        self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
+        self.push_messages_receiver = PushMessageReceiver()
         self.configuration_builder = None
-        self.message_router = None
+        self.message_router = MessageRouter(self._default_message_handler)
+        self.message_sender = MessageSender()
         self.state = ManagerState.EMPTY
         self._http_client = httpclient.HTTPClient()
         self._alert_registered = False
-        self.id = getnode()  # A unique identifier of this OBSI
+        self.obsi_id = getnode()  # A unique identifier of this OBSI
         self._engine_running = False
         self._engine_running_lock = locks.Lock()
+        self._keep_alive_periodic_callback = None
 
     def start(self):
         app_log.info("Starting components")
@@ -60,10 +65,10 @@ class Manager(object):
         self._start_push_messages_receiver()
         self._start_configuration_builder()
         self._start_message_router()
-        self._start_message_sender()
         self._start_local_rest_server()
         app_log.info("All components active")
         self.state = ManagerState.INITIALIZED
+        self._start_sending_keep_alive()
         self._send_hello_message()
         self._start_io_loop()
 
@@ -112,7 +117,9 @@ class Manager(object):
                 return True
             except httpclient.HTTPError:
                 return True
-            except Exception:
+            except KeyboardInterrupt:
+                raise
+            except socket.error:
                 time.sleep(config.INTERVAL_BETWEEN_CONNECTION_TRIES)
 
         return False
@@ -199,7 +206,6 @@ class Manager(object):
 
     def _start_watchdog(self):
         app_log.info("Starting ProcessWatchdog")
-        self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
         self._watchdog.register_process(self._runner_process, self._process_died)
         self._watchdog.register_process(self._control_process, self._process_died)
         self._watchdog.start()
@@ -216,7 +222,6 @@ class Manager(object):
 
     def _start_push_messages_receiver(self):
         app_log.info("Starting PushMessagesReceiver")
-        self.push_messages_receiver = PushMessageReceiver()
         self.push_messages_receiver.connect(config.PushMessages.SOCKET_ADDRESS,
                                             config.PushMessages.SOCKET_FAMILY,
                                             config.PushMessages.RETRY_INTERVAL)
@@ -228,7 +233,6 @@ class Manager(object):
     @gen.coroutine
     def _start_message_router(self):
         app_log.info("Starting MessageRouter")
-        self.message_router = MessageRouter()
         self._register_messages_handler()
         yield self.message_router.start()
 
@@ -236,13 +240,21 @@ class Manager(object):
         app_log.info("Registering handlers for messages")
         # TODO: add real code
 
-    def _start_message_sender(self):
-        app_log.info("Starting MessageSender")
-        # TODO: add real code
-
     def _start_local_rest_server(self):
         app_log.info("Starting local REST server on port {port}".format(port=config.RestServer.PORT))
         rest_server.start(self)
+
+    def _start_sending_keep_alive(self):
+        self._keep_alive_periodic_callback = PeriodicCallback(self._send_keep_alive, config.KeepAlive.INTERVAL)
+        self._keep_alive_periodic_callback.start()
+
+    @gen.coroutine
+    def _send_keep_alive(self):
+        try:
+            # We ignore the response
+            response = yield self.message_sender.send_message(messages.KeepAlive(dpid=self.obsi_id))
+        except socket.error:
+            app_log.error("KeepAlive connection refused by OBC")
 
     def _send_hello_message(self):
         app_log.info("Creating and sending Hello Message")
@@ -258,8 +270,14 @@ class Manager(object):
             self._engine_running = False
         app_log.error("Engine stopped working: {errors}".format(errors=errors))
 
+    @gen.coroutine
+    def _default_message_handler(self, message):
+        app_log.info("Received message from OBC without a handler: {message}".format(message=message))
+
 
 def main():
+    options.define('port', default=config.RestServer.PORT, type=int, help="The server's port. ")
+    options.define('debug', default=config.RestServer.DEBUG, type=bool, help='Start the server with debug options.')
     options.parse_command_line()
     manager = Manager()
     manager.start()
