@@ -58,7 +58,6 @@ class HandlerField(object):
         return result
 
 
-
 class OpenBoxBlockMeta(type):
     def __init__(cls, name, bases, dct):
         if not hasattr(cls, "blocks_registry"):
@@ -163,6 +162,15 @@ def build_open_box_block(name, config_fields=None, read_handlers=None, write_han
 
     args = dict(__fields__=config_fields, __read_handlers__=read_handlers, __write_handlers__=write_handlers)
     return OpenBoxBlockMeta(name, (OpenBoxBlock,), args)
+
+
+def build_open_box_block_from_dict(block):
+    return build_open_box_block(block['name'], block['config_fields'], block['read_handlers'], block['write_handlers'])
+
+
+def build_open_box_from_json(json_block):
+    return build_open_box_block_from_dict(json.loads(json_block))
+
 
 FromDevice = build_open_box_block('FromDevice',
                                   [ConfigField('devname', True, FieldType.STRING),
