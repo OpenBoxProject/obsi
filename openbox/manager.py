@@ -316,7 +316,7 @@ class Manager(object):
         duration = cpu['measurement_time']
         self._avg_cpu = (current_load * duration + self._avg_cpu * self._avg_duration) / (duration + self._avg_duration)
         self._avg_duration += duration
-        stats = dict(memory_rss=memory['rss'], memory_vms=memory['vms'], memory_percent=memory['percent']/100.0,
+        stats = dict(memory_rss=memory['rss'], memory_vms=memory['vms'], memory_percent=memory['percent'],
                      cpus=cpu_count, current_load=current_load, avg_load = self._avg_cpu,
                      avg_minutes=self._avg_duration/60.0, uptime=uptime['uptime'])
         raise gen.Return(stats)
