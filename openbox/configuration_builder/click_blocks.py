@@ -1,5 +1,6 @@
 import functools
 import re
+import json
 from click_elements import Element, ElementConfigurationError
 from connection import Connection
 
@@ -157,8 +158,13 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
     return ClickBlockMeta(name, (ClickBlock,), args)
 
 
+def build_click_block_from_dict(config):
+    name = config.pop('type')
+    return build_click_block(name, **config)
 
 
-
+def build_click_block_from_json(json_config):
+    config = json.loads(json_config)
+    return build_click_block_from_dict(config)
 
 
