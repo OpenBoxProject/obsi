@@ -121,7 +121,7 @@ class Element(object):
             setattr(self, arg_name, arg_value)
 
     @classmethod
-    def from_config(cls, config):
+    def from_dict(cls, config):
         """
         Create an instance of an element from the elements configuration dict
 
