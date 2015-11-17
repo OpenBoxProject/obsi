@@ -41,7 +41,7 @@ class Connection(object):
 
     def to_click_config(self):
         return self.__CONNECTION_PATTERN.format(from_element=self.src, to_element=self.dst,
-                                                from_port=self.src_port, to_port=self.dst)
+                                                from_port=self.src_port, to_port=self.dst_port)
 
     def to_dict(self):
         return dict(src=self.src, dst=self.dst, src_port=self.src_port, dst_port=self.dst_port)
