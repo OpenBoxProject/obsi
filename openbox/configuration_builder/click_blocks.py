@@ -66,41 +66,38 @@ class ClickBlock(object):
         return elements
 
     def _create_element_instance(self, element_config):
-        new_config = {'type': element_config.pop('type'),
-                      'name': self._to_external_element_name(element_config.pop('name'))}
-        for field_name, field_value in element_config.iteritems():
+        type = element_config['type']
+        name = self._to_external_element_name(element_config['name'])
+        config = element_config['config']
+        new_config = {}
+        for field_name, field_value in config.iteritems():
             if isinstance(field_value, str) and field_value.startswith(self.VARIABLE_INDICATOR):
                 new_config[field_name] = self._transform_config_field(field_value.lstrip(self.VARIABLE_INDICATOR))
             else:
                 new_config[field_name] = field_value
-        return Element.from_dict(new_config)
+        return Element.from_dict(dict(name=name, type=type, config=new_config))
 
     def _transform_config_field(self, variable_name):
         fields, transform_function = self.__config_mapping__[variable_name]
-        if transform_function is None:
-            if len(fields) != 1:
-                raise ClickBlockConfigurationError(
-                    "Incorrect definition for Click block {block}".format(block=self.block.name))
-            else:
-                return getattr(self.block, fields[0])
-        else:
-            field_values = [getattr(self.block, field_name, None) for field_name in fields]
-            return transform_function(*field_values)
+        field_values = [getattr(self.block, field_name, None) for field_name in fields]
+        return transform_function(*field_values)
 
     def _to_external_element_name(self, element):
-        return self.ELEMENT_NAME_PATTERN.format(block=self.block, element=element)
+        return self.ELEMENT_NAME_PATTERN.format(block=self.block.name, element=element)
 
     def connections(self):
         connections = []
         for connection in self.__connections__:
+            if isinstance(connection, dict):
+                connection = Connection.from_dict(connection)
             connections.append(self._translate_connection(connection))
 
         return connections
 
     def _translate_connection(self, connection):
-        from_element = self._to_external_element_name(connection.from_element)
-        to_element = self._to_external_element_name(connection.to_element)
-        return Connection(from_element, to_element, connection.from_port, connection.to_port)
+        src_element = self._to_external_element_name(connection.src)
+        dst_element = self._to_external_element_name(connection.dst)
+        return Connection(src_element, dst_element, connection.src_port, connection.dst_port)
 
     def input_element_and_port(self, port):
         if self.__input__ is None:
@@ -173,6 +170,8 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
                     raise TypeError(
                         "The transformation function for {name} is None but there are more then 1 field".format(
                             name=k))
+                else:
+                    updated_config_mapping[k] = (fields, transformations.identity)
             else:
                 transform_function = getattr(transformations, transform_function_name)
                 updated_config_mapping[k] = (fields, transform_function)
@@ -198,12 +197,19 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
     # verify connections
     for connection in connections:
         try:
-            parsed_connection = Connection.from_dict(connection)
-            if parsed_connection.from_element not in element_names:
+            if isinstance(connection, dict):
+                parsed_connection = Connection.from_dict(connection)
+            elif isinstance(connection, Connection):
+                parsed_connection = connection
+            else:
+                raise TypeError(
+                    "Connection must be of type dict or Connection and not {type}".format(type=type(connection)))
+            print parsed_connection
+            if parsed_connection.src not in element_names:
                 raise ValueError(
-                    'Undefined from_element {name} in connection'.format(name=parsed_connection.from_element))
-            if parsed_connection.to_element not in element_names:
-                raise ValueError('Undefined to_element {name} in connection'.format(name=parsed_connection.to_element))
+                    'Undefined src {name} in connection'.format(name=parsed_connection.src))
+            if parsed_connection.dst not in element_names:
+                raise ValueError('Undefined dst {name} in connection'.format(name=parsed_connection.dst))
 
         except ConnectionConfigurationError:
             raise ValueError('Illegal connection configuration: {config}'.format(config=connection))
@@ -247,7 +253,7 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
             raise ValueError("Mapping for write handler {name} is not a tuple of correct size".format(name=k))
     write_mapping = new_mapping
 
-    args = dict(__config_mapping__=config_mapping, __elemnents__=elements, __connections__=connections,
+    args = dict(__config_mapping__=config_mapping, __elements__=elements, __connections__=connections,
                 __input__=input, __output__=output, __read_mapping__=read_mapping, __write_mapping__=write_mapping)
 
     return ClickBlockMeta(name, (ClickBlock,), args)
@@ -265,6 +271,7 @@ def build_click_block_from_json(json_config):
 
 def _no_transform(name):
     return [name], None
+
 
 FromDevice = build_click_block('FromDevice',
                                config_mapping=dict(devname=_no_transform('devname'),
