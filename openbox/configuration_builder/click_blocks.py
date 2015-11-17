@@ -156,7 +156,7 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         raise TypeError("config_mapping must be of type dict not {type}".format(type=type(config_mapping)))
 
     updated_config_mapping = {}
-    for k, v in config_mapping:
+    for k, v in config_mapping.iteritems():
         try:
             fields, transform_function_name = v
             if transform_function_name is None:
@@ -214,7 +214,8 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         try:
             element_name, handler_name, transform_function_name = v
             if element_name not in element_names:
-                raise ValueError("Mapping for read handler {name} refers to unknown element {element}".format(name=k, element=element_name))
+                raise ValueError("Mapping for read handler {name} refers to unknown element {element}".format(name=k,
+                                                                                                              element=element_name))
             transform_function = getattr(transformations, transform_function_name, None)
             new_mapping[k] = (element_name, handler_name, transform_function)
         except TypeError:
@@ -229,7 +230,8 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         try:
             element_name, handler_name, transform_function_name = v
             if element_name not in element_names:
-                raise ValueError("Mapping for write handler {name} refers to unknown element {element}".format(name=k, element=element_name))
+                raise ValueError("Mapping for write handler {name} refers to unknown element {element}".format(name=k,
+                                                                                                               element=element_name))
             transform_function = getattr(transformations, transform_function_name, None)
             new_mapping[k] = (element_name, handler_name, transform_function)
         except TypeError:
@@ -250,4 +252,23 @@ def build_click_block_from_dict(config):
 def build_click_block_from_json(json_config):
     config = json.loads(json_config)
     return build_click_block_from_dict(config)
+
+
+def _no_transform(name):
+    return [name], None
+
+
+FromDevice = build_click_block('FromDevice',
+                               config_mapping=dict(devname=_no_transform('devname'),
+                                                   sniffer=_no_transform('sniffer'),
+                                                   promisc=_no_transform('promisc')),
+                               elements=[
+                                   dict(name='from_device', type='FromDevice',
+                                        config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc')),
+                                   dict(name='counter', type='Counter', config={})
+                               ],
+                               connections=[
+                                   dict(src='from_device', dst='counter', src_port=0, dst_port=0),
+                               ],
+                               output='counter')
 

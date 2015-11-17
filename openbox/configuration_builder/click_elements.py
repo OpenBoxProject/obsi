@@ -281,3 +281,20 @@ CheckAverageLength = build_element('CheckAverageLength',
                                    mandatory_positional=[MandatoryPositionalArgument('minlength')])
 
 Classifier = build_element('Classifier', list_argument=ListArguments('pattern'))
+FromDevice = build_element('FromDevice', mandatory_positional=[MandatoryPositionalArgument('devname')],
+                           keywords=[KeywordArgument('sniffer'),
+                                     KeywordArgument('promisc'),
+                                     KeywordArgument('snaplen'),
+                                     KeywordArgument('force_ip'),
+                                     KeywordArgument('method'),
+                                     KeywordArgument('bpf_filter'),
+                                     KeywordArgument('encap'),
+                                     KeywordArgument('outbound'),
+                                     KeywordArgument('headroom'),
+                                     KeywordArgument('burst'),
+                                     ],
+                           read_handlers=['count', 'kernel-drops', 'encap'],
+                           write_handlers=['reset_counts'])
+Counter = build_element('Counter',
+                        read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
+                        write_handlers=['reset_counts'])
