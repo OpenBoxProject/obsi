@@ -5,24 +5,21 @@ An OBSI's Manager.
 import socket
 import time
 import sys
-
 import psutil
+import config
+import messages
+import rest_server
+from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
 from tornado.ioloop import IOLoop, PeriodicCallback
-from tornado import httpclient, gen, options, locks
-from click_configuration_builder import ClickConfigurationBuilder
-
-import config
+from configuration_builder.click_configuration_builder import ClickConfigurationBuilder
 from message_handler import MessageHandler
 from message_sender import MessageSender
-import messages
-import rest_server
 from watchdog import ProcessWatchdog
 from push_message_receiver import PushMessageReceiver
 from message_router import MessageRouter
 from uuid import getnode
-
 
 class ManagerState:
     EMPTY = 0
