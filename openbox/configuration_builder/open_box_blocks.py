@@ -157,6 +157,10 @@ class OpenBoxBlock(object):
     def __str__(self):
         return self.to_json()
 
+    @property
+    def type(self):
+        return self.__class__.__name__
+
 
 def build_open_box_block(name, config_fields=None, read_handlers=None, write_handlers=None):
     """

@@ -46,6 +46,15 @@ class ClickBlock(object):
     def __init__(self, open_box_block):
         self.block = open_box_block
 
+    @classmethod
+    def from_open_box_block(cls, open_box_block):
+        """
+
+        :rtype : ClickBlock
+        """
+        clazz = cls.blocks_registry[open_box_block.type]
+        return clazz(open_box_block)
+
     def elements(self):
         elements = []
         for element_config in self.__elements__:
@@ -256,7 +265,6 @@ def build_click_block_from_json(json_config):
 
 def _no_transform(name):
     return [name], None
-
 
 FromDevice = build_click_block('FromDevice',
                                config_mapping=dict(devname=_no_transform('devname'),
