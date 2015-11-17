@@ -49,7 +49,6 @@ class ClickBlock(object):
     @classmethod
     def from_open_box_block(cls, open_box_block):
         """
-
         :rtype : ClickBlock
         """
         clazz = cls.blocks_registry[open_box_block.type]
@@ -157,7 +156,27 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
     read_mapping = read_mapping or {}
     write_mapping = write_mapping or {}
 
-    # verify config_mapping
+    config_mapping = _update_config_mapping(config_mapping)
+    element_names = _get_element_names(elements)
+    _verify_connections(connections, element_names)
+
+    # verify input/output mapping
+    if input and not isinstance(input, (str, dict)):
+        raise TypeError("Input is of the wrong type {type}".format(type=type(input)))
+
+    if output and not isinstance(output, (str, dict)):
+        raise TypeError("Output is of the wrong type {type}".format(type=type(output)))
+
+    read_mapping = _update_handler_mapping(element_names, read_mapping, 'read')
+    write_mapping = _update_handler_mapping(element_names, write_mapping, 'write')
+
+    args = dict(__config_mapping__=config_mapping, __elements__=elements, __connections__=connections,
+                __input__=input, __output__=output, __read_mapping__=read_mapping, __write_mapping__=write_mapping)
+
+    return ClickBlockMeta(name, (ClickBlock,), args)
+
+
+def _update_config_mapping(config_mapping):
     if not isinstance(config_mapping, dict):
         raise TypeError("config_mapping must be of type dict not {type}".format(type=type(config_mapping)))
 
@@ -183,10 +202,11 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         except AttributeError:
             raise ValueError(
                 "Unknown transformation function for configuration mapping field {name}".format(name=k))
-    config_mapping = updated_config_mapping
+    return updated_config_mapping
 
+
+def _get_element_names(elements):
     element_names = set()
-    # verify elements
     for element in elements:
         try:
             parsed_element = Element.from_dict(element)
@@ -194,6 +214,10 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         except ElementConfigurationError:
             raise ValueError('Illegal element configuration {config}'.format(config=element))
 
+    return element_names
+
+
+def _verify_connections(connections, element_names):
     # verify connections
     for connection in connections:
         try:
@@ -204,7 +228,6 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
             else:
                 raise TypeError(
                     "Connection must be of type dict or Connection and not {type}".format(type=type(connection)))
-            print parsed_connection
             if parsed_connection.src not in element_names:
                 raise ValueError(
                     'Undefined src {name} in connection'.format(name=parsed_connection.src))
@@ -214,49 +237,26 @@ def build_click_block(name, config_mapping=None, elements=None, connections=None
         except ConnectionConfigurationError:
             raise ValueError('Illegal connection configuration: {config}'.format(config=connection))
 
-    # verify input/output mapping
-    if input and not isinstance(input, (str, dict)):
-        raise TypeError("Input is of the wrong type {type}".format(type=type(input)))
 
-    if output and not isinstance(output, (str, dict)):
-        raise TypeError("Output is of the wrong type {type}".format(type=type(output)))
-
-    # verify read mapping
-    if not isinstance(read_mapping, dict):
-        raise TypeError("Read mapping is of the wrong type {type}".format(type=type(read_mapping)))
+def _update_handler_mapping(element_names, mapping, handler_type):
+    if not isinstance(mapping, dict):
+        raise TypeError("{handler_type} mapping is of the wrong type {type}".format(type=type(mapping),
+                                                                                    handler_type=handler_type))
     new_mapping = {}
-    for k, v in read_mapping:
+    for k, v in mapping:
         try:
             element_name, handler_name, transform_function_name = v
             if element_name not in element_names:
-                raise ValueError("Mapping for read handler {name} refers to unknown element {element}".format(name=k,
-                                                                                                              element=element_name))
+                raise ValueError("Mapping for {handler_type} handler {name}"
+                                 " refers to unknown element {element}".format(name=k,
+                                                                               element=element_name,
+                                                                               handler_type=handler_type))
             transform_function = getattr(transformations, transform_function_name, None)
             new_mapping[k] = (element_name, handler_name, transform_function)
         except TypeError:
-            raise ValueError("Mapping for read handler {name} is not a tuple of correct size".format(name=k))
-    read_mapping = new_mapping
-
-    # verify write mapping
-    if not isinstance(write_mapping, dict):
-        raise TypeError("Write mapping is of the wrong type {type}".format(type=type(read_mapping)))
-    new_mapping = {}
-    for k, v in write_mapping:
-        try:
-            element_name, handler_name, transform_function_name = v
-            if element_name not in element_names:
-                raise ValueError("Mapping for write handler {name} refers to unknown element {element}".format(name=k,
-                                                                                                               element=element_name))
-            transform_function = getattr(transformations, transform_function_name, None)
-            new_mapping[k] = (element_name, handler_name, transform_function)
-        except TypeError:
-            raise ValueError("Mapping for write handler {name} is not a tuple of correct size".format(name=k))
-    write_mapping = new_mapping
-
-    args = dict(__config_mapping__=config_mapping, __elements__=elements, __connections__=connections,
-                __input__=input, __output__=output, __read_mapping__=read_mapping, __write_mapping__=write_mapping)
-
-    return ClickBlockMeta(name, (ClickBlock,), args)
+            raise ValueError("Mapping for {handler_type} handler {name} "
+                             "is not a tuple of correct size".format(name=k, handler_type=handler_type))
+    return new_mapping
 
 
 def build_click_block_from_dict(config):
@@ -286,4 +286,3 @@ FromDevice = build_click_block('FromDevice',
                                    dict(src='from_device', dst='counter', src_port=0, dst_port=0),
                                ],
                                output='counter')
-
