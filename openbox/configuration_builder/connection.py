@@ -21,21 +21,21 @@ class Connection(object):
 
     @classmethod
     def from_dict(cls, config):
-        from_element = config.get("from")
+        from_element = config.get("src")
         if from_element is None:
-            raise ConnectionConfigurationError("Connection has no from element in configuration")
-        to_element = config.get("to")
+            raise ConnectionConfigurationError("Connection has no 'src' element in configuration")
+        to_element = config.get("dst")
         if to_element is None:
-            raise ConnectionConfigurationError("Connection has no to element in configuration")
+            raise ConnectionConfigurationError("Connection has no 'dst' element in configuration")
 
         try:
-            from_port = int(config.get('from_port', '0'))
+            from_port = int(config.get('src_port', '0'))
         except ValueError:
-            raise ConnectionConfigurationError("from_port must be an integer")
+            raise ConnectionConfigurationError("src_port must be an integer")
         try:
-            to_port = int(config.get('to_port', '0'))
+            to_port = int(config.get('dst_port', '0'))
         except ValueError:
-            raise ConnectionConfigurationError("to_port must be an integer")
+            raise ConnectionConfigurationError("dst_port must be an integer")
 
         return cls(from_element, to_element, from_port, to_port)
 
