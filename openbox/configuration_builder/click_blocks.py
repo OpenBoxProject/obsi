@@ -61,8 +61,9 @@ class ClickBlock(object):
                     "Unable to build click configuration for block {name}".format(name=self.block.name))
         return elements
 
-    def required_element_types(self):
-        return set(element_config['type'] for element_config in self.__elements__)
+    @classmethod
+    def required_element_types(cls):
+        return set(element_config['type'] for element_config in cls.__elements__)
 
     def _create_element_instance(self, element_config):
         type = element_config['type']

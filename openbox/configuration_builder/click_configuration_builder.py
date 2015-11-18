@@ -25,6 +25,23 @@ class ClickConfigurationBuilder(object):
     def supported_blocks():
         return ClickBlock.blocks_registry.keys()
 
+    @staticmethod
+    def supported_blocks_from_supported_elements_types(elements):
+        elements = set(elements)
+        blocks = []
+        for block_name, block in ClickBlock.blocks_registry.iteritems():
+            if all(element in elements for element in block.required_element_types()):
+                blocks.append(block_name)
+        return blocks
+
+    @staticmethod
+    def supported_match_fields():
+        return []
+
+    @staticmethod
+    def supported_protocol_analyser_protocols():
+        return []
+
     @classmethod
     def from_open_box_configuration(cls, config):
         requirements = config.requirements

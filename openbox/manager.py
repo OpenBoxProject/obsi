@@ -13,13 +13,14 @@ from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
 from tornado.ioloop import IOLoop, PeriodicCallback
-from configuration_builder.click_configuration_builder import ClickConfigurationBuilder
+from configuration_builder import ConfigurationBuilder
 from message_handler import MessageHandler
 from message_sender import MessageSender
 from watchdog import ProcessWatchdog
 from push_message_receiver import PushMessageReceiver
 from message_router import MessageRouter
 from uuid import getnode
+
 
 class ManagerState:
     EMPTY = 0
@@ -44,7 +45,7 @@ class Manager(object):
         self._control_process = None
         self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
         self.push_messages_receiver = PushMessageReceiver()
-        self.configuration_builder = ClickConfigurationBuilder()
+        self.configuration_builder = ConfigurationBuilder(config.Engine.CONFIGURATION_BUILDER)
         self.message_handler = MessageHandler(self)
         self.message_router = MessageRouter(self.message_handler.default_message_handler)
         self.message_sender = MessageSender()
@@ -54,6 +55,7 @@ class Manager(object):
         self.obsi_id = getnode()  # A unique identifier of this OBSI
         self._engine_running = False
         self._engine_running_lock = locks.Lock()
+        self._processing_graph_set = False
         self._keep_alive_periodic_callback = None
         self._avg_cpu = 0
         self._avg_duration = 0
@@ -218,7 +220,7 @@ class Manager(object):
             app_log.error("EE Runner REST server has died")
             with (yield self._engine_running_lock.acquire()):
                 self._engine_running = False
-            # TODO: add recovering logic
+                # TODO: add recovering logic
         elif process == self._control_process:
             app_log.error("EE Control REST server has died")
             # TODO: Add real handling
@@ -233,7 +235,19 @@ class Manager(object):
 
     def _start_configuration_builder(self):
         app_log.info("Starting EE Configuration Builder")
-        # TODO: Add real code
+        try:
+            uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.SUPPORTED_ELEMENTS)
+            response = self._http_client.fetch(uri)
+            self._supported_elements_types = set(json_decode(response.body))
+            supported_blocks = set(self.configuration_builder.supported_blocks())
+            blocks_from_engine = set(self.configuration_builder.supported_blocks_from_supported_engine_elements_types(self._supported_elements_types))
+            if supported_blocks != blocks_from_engine:
+                app_log.warning("There is a mismatched between supported blocks by OBSI "
+                                "and supported blocks by engine")
+
+        except httpclient.HTTPError:
+            app_log.error("Unable to connect to EE control in order to get a list of supported elements types")
+
 
     @gen.coroutine
     def _start_message_router(self):
@@ -279,10 +293,10 @@ class Manager(object):
             proto_messages.append(messages.AddCustomModuleRequest.__name__)
         if config.Engine.Capabilities.MODULE_REMOVAL:
             proto_messages.append(messages.RemoveCustomModuleRequest.__name__)
-        processing_blocks = self.configuration_builder.processing_blocks
-        match_fields = self.configuration_builder.match_fields
+        processing_blocks = self.configuration_builder.supported_blocks()
+        match_fields = self.configuration_builder.supported_match_fields()
         complex_match = config.Engine.Capabilities.COMPLEX_MATCH
-        protocol_analyser_protocols = self.configuration_builder.protocol_analyser_protocols
+        protocol_analyser_protocols = self.configuration_builder.supported_protocol_analyser_protocols()
 
         return dict(proto_messages=proto_messages, processing_blocks=processing_blocks,
                     match_fields=match_fields, complex_match=complex_match,
@@ -314,8 +328,8 @@ class Manager(object):
         self._avg_cpu = (current_load * duration + self._avg_cpu * self._avg_duration) / (duration + self._avg_duration)
         self._avg_duration += duration
         stats = dict(memory_rss=memory['rss'], memory_vms=memory['vms'], memory_percent=memory['percent'],
-                     cpus=cpu_count, current_load=current_load, avg_load = self._avg_cpu,
-                     avg_minutes=self._avg_duration/60.0, uptime=uptime['uptime'])
+                     cpus=cpu_count, current_load=current_load, avg_load=self._avg_cpu,
+                     avg_minutes=self._avg_duration / 60.0, uptime=uptime['uptime'])
         raise gen.Return(stats)
 
     @gen.coroutine

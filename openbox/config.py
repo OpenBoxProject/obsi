@@ -3,6 +3,7 @@ The main configuration of the OBSI
 """
 import os.path
 import socket
+from configuration_builder.click_configuration_builder import ClickConfigurationBuilder
 import runner.config as runner_config
 import control.config as control_config
 
@@ -48,6 +49,7 @@ class RestServer:
 
 class Engine:
     NAME = 'click'
+    CONFIGURATION_BUILDER = ClickConfigurationBuilder
     CONTROL_SOCKET_TYPE = 'TCP'
     CONTROL_SOCKET_ENDPOINT = 10001
     PUSH_MESSAGES_SOCKET_TYPE = 'TCP'
