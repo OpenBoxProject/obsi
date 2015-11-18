@@ -17,7 +17,7 @@ class OpenBoxConfiguration(object):
     def from_dict(cls, config, additional_requirements=None):
         requirements = additional_requirements or []
         requirements.extend(config['requirements'])
-        blocks = [OpenBoxBlock.from_dict(block_config) for block_config in config['block']]
+        blocks = [OpenBoxBlock.from_dict(block_config) for block_config in config['blocks']]
         block_names = set(block.name for block in blocks)
         connections = []
         for connection_config in config['connections']:
@@ -32,8 +32,13 @@ class OpenBoxConfiguration(object):
 
         return cls(requirements, blocks, connections)
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
 
+        return (self.requirements == other.requirements and
+                self.blocks == other.blocks and
+                self.connections == other.connections)
 
-
-
-
+    def __ne__(self, other):
+        return not self.__eq__(other)

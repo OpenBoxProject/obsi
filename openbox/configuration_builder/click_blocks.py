@@ -2,7 +2,7 @@ import functools
 import re
 import json
 
-from exceptions import ClickBlockConfigurationError, ClickElementConfigurationError
+from exceptions import ClickBlockConfigurationError
 import transformations
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection
@@ -38,6 +38,10 @@ class ClickBlock(object):
 
     def __init__(self, open_box_block):
         self.block = open_box_block
+
+    @property
+    def name(self):
+        return self.block.name
 
     @classmethod
     def from_open_box_block(cls, open_box_block):

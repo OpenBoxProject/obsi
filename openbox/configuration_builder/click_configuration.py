@@ -5,7 +5,7 @@ class ClickConfiguration(object):
         self.requirements = requirements or []
         self.elements = elements or []
         self.connections = connections or []
-        self._elements_by_name = dict((element.name, element) for element in self.blocks)
+        self._elements_by_name = dict((element.name, element) for element in self.elements)
 
     def to_engine_config(self):
         config = []
@@ -19,3 +19,14 @@ class ClickConfiguration(object):
             config.append(connection.to_click_config())
 
         return '\n'.join(config)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        return (self.requirements == other.requirements and
+                self.elements == other.elements and
+                self.connections == other.connections)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)

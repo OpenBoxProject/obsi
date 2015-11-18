@@ -149,6 +149,16 @@ class OpenBoxBlock(object):
     def type(self):
         return self.__class__.__name__
 
+    def __eq__(self, other):
+        if not isinstance(self, other.__class__):
+            return False
+
+        return self.name == other.name and all(
+            getattr(self, field.name, None) == getattr(other, field.name, None) for field in self.__fields__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
 
 def build_open_box_block(name, config_fields=None, read_handlers=None, write_handlers=None):
     """

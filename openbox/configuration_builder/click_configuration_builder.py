@@ -1,15 +1,18 @@
 """
 Transforms an OpenBox configuration in to a Click's configuration
 """
-from open_box_blocks import OpenBoxBlock
 from click_blocks import ClickBlock
+from click_configuration import ClickConfiguration
+from connection import Connection
 
 
 class ClickConfigurationBuilder(object):
-    def __init__(self):
-        self.processing_blocks = []
-        self.match_fields = []
-        self.protocol_analyser_protocols = []
+    def __init__(self, requirements=None, click_blocks=None, connections=None):
+        self.requirements = requirements or []
+        self.blocks = click_blocks or []
+        self.connections = connections or []
+        self._blocks_by_name = dict((block.name, block) for block in self.blocks)
+        self.click_config = self._build_click_config()
 
     @staticmethod
     def required_elements():
@@ -22,5 +25,32 @@ class ClickConfigurationBuilder(object):
     def supported_blocks():
         return ClickBlock.blocks_registry.keys()
 
-    def from_open_box_configuration(self, config):
-        raise NotImplementedError()
+    @classmethod
+    def from_open_box_configuration(cls, config):
+        requirements = config.requirements
+        click_blocks = [ClickBlock.from_open_box_block(block) for block in config.blocks]
+        connections = config.connections
+        return cls(requirements, click_blocks, connections)
+
+    def _build_click_config(self):
+        # get the local elements of each block
+        elements = []
+        for block in self.blocks:
+            elements.extend(block.elements())
+
+        # get the local connections from each block
+        click_connections = []
+        for block in self.blocks:
+            click_connections.extend(block.connections())
+
+        for connection in self.connections:
+            src_block = self._blocks_by_name[connection.src]
+            dst_block = self._blocks_by_name[connection.dst]
+            src_element, src_element_port = src_block.output_element_and_port(connection.src_port)
+            dst_element, dst_element_port = dst_block.input_element_and_port(connection.dst_port)
+            click_connections.append(Connection(src_element, dst_element, src_element_port, dst_element_port))
+
+        return ClickConfiguration(self.requirements, elements, click_connections)
+
+    def to_engine_config(self):
+        return self.click_config.to_engine_config()
