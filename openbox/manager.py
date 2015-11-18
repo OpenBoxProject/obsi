@@ -9,6 +9,7 @@ import psutil
 import config
 import messages
 import rest_server
+from exceptions import EngineNotRunningError, ProcessingGraphNotSetError
 from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
@@ -56,6 +57,7 @@ class Manager(object):
         self._engine_running = False
         self._engine_running_lock = locks.Lock()
         self._processing_graph_set = False
+        self._engine_configuration_builder = None
         self._keep_alive_periodic_callback = None
         self._avg_cpu = 0
         self._avg_duration = 0
@@ -240,7 +242,8 @@ class Manager(object):
             response = self._http_client.fetch(uri)
             self._supported_elements_types = set(json_decode(response.body))
             supported_blocks = set(self.configuration_builder.supported_blocks())
-            blocks_from_engine = set(self.configuration_builder.supported_blocks_from_supported_engine_elements_types(self._supported_elements_types))
+            blocks_from_engine = set(self.configuration_builder.supported_blocks_from_supported_engine_elements_types(
+                self._supported_elements_types))
             if supported_blocks != blocks_from_engine:
                 app_log.warning("There is a mismatched between supported blocks by OBSI "
                                 "and supported blocks by engine")
@@ -336,6 +339,45 @@ class Manager(object):
     def reset_engine_global_stats(self):
         self._avg_cpu = 0
         self._avg_duration = 0
+
+    @gen.coroutine
+    def read_block_value(self, block_name, handler_name):
+        with (yield self._engine_running_lock):
+            if not self._engine_running:
+                raise EngineNotRunningError()
+        if not self._processing_graph_set or self._engine_configuration_builder is None:
+            raise ProcessingGraphNotSetError()
+        else:
+            (engine_element_name,
+             engine_handler_name,
+             transform_function) = self._engine_configuration_builder.translate_block_read_handler(block_name,
+                                                                                                   handler_name)
+            uri = _get_full_uri(config.Control.Rest.BASE_URI,
+                                config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=engine_element_name,
+                                                                                     handler=engine_handler_name))
+            client = httpclient.AsyncHTTPClient()
+            response = yield client.fetch(uri)
+            raise gen.Return(transform_function(json_decode(response.body)))
+
+    @gen.coroutine
+    def write_block_value(self, block_name, handler_name, value):
+        with (yield self._engine_running_lock):
+            if not self._engine_running:
+                raise EngineNotRunningError()
+        if not self._processing_graph_set or self._engine_configuration_builder is None:
+            raise ProcessingGraphNotSetError()
+        else:
+            (engine_element_name,
+             engine_handler_name,
+             transform_function) = self._engine_configuration_builder.translate_block_write_handler(block_name,
+                                                                                                    handler_name)
+            uri = _get_full_uri(config.Control.Rest.BASE_URI,
+                                config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=engine_element_name,
+                                                                                     handler=engine_handler_name))
+            body = json_encode(transform_function(value))
+            client = httpclient.AsyncHTTPClient()
+            yield client.fetch(uri, method='POST', body=body)
+            raise gen.Return(True)
 
 
 def main():

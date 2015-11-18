@@ -1,6 +1,7 @@
 from tornado import gen
 from tornado.log import app_log
 from tornado.httpclient import AsyncHTTPClient
+from exceptions import ManagerError
 
 import messages
 
@@ -59,23 +60,30 @@ class MessageHandler(object):
     @gen.coroutine
     def handle_read_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
-        value = yield self.manager.read_block_value(message.block_id, message.read_handle)
-        if value is not None:
-            response = messages.ReadResponse.from_request(message, result=value)
-        else:
+        try:
+            value = yield self.manager.read_block_value(message.block_id, message.read_handle)
+            if value is not None:
+                response = messages.ReadResponse.from_request(message, result=value)
+            else:
+                # TODO: improve error handling
+                response = messages.Error.from_request(message)
+        except (ValueError, ManagerError) as e:
             # TODO: improve error handling
             response = messages.Error.from_request(message)
+
         yield self.manager.message_sender.send_message_ignore_response(response)
 
     @gen.coroutine
     def handle_write_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
-        response = yield self.manager.write_block_value(message.block_id, message.write_handle)
-        if response:
-            response = messages.WriteResponse.from_request(message)
-        else:
+        try:
+            response = yield self.manager.write_block_value(message.block_id, message.write_handle)
+            if response:
+                response = messages.WriteResponse.from_request(message)
+        except (ValueError, ManagerError) as e:
             # TODO: improve error handling
             response = messages.Error.from_request(message)
+
         yield self.manager.message_sender.send_message_ignore_response(response)
 
     @gen.coroutine

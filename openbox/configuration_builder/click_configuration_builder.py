@@ -71,3 +71,17 @@ class ClickConfigurationBuilder(object):
 
     def to_engine_config(self):
         return self.click_config.to_engine_config()
+
+    def translate_block_read_handler(self, block_name, handler_name):
+        try:
+            block = self._blocks_by_name[block_name]
+        except KeyError:
+            raise ValueError('Unknown block named: {name}'.format(name=block_name))
+        return block.translate_read_handler(handler_name)
+
+    def translate_block_write_handler(self, block_name, handler_name):
+        try:
+            block = self._blocks_by_name[block_name]
+        except KeyError:
+            raise ValueError('Unknown block named: {name}'.format(name=block_name))
+        return block.translate_write_handler(handler_name)

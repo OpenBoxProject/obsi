@@ -22,5 +22,6 @@ class RestServer:
         SEQUENCE = '/control/elements/sequence'
         IS_READABLE = '/control/elements/(.*)/(.*)/is_read'
         IS_WRITEABLE = '/control/elements/(.*)/(.*)/is_write'
-        HANDLER = '/control/elements/(.*)/(.*)'
+        HANDLER_PATTERN = '/control/elements/{element}/{handler}'
+        HANDLER = HANDLER_PATTERN.format(element='(.*)', handler='(.*)')
         LIST_HANDLERS = '/control/elements/(.*)'
