@@ -49,3 +49,15 @@ class Connection(object):
     def __str__(self):
         return str(self.to_dict())
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        return (self.src == other.src and
+                self.dst == other.dst and
+                self.src_port == other.src_port and
+                self.dst_port == other.dst_port)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
