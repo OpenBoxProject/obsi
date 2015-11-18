@@ -51,7 +51,7 @@ class TestBuildConfiguration(unittest.TestCase):
 
     def test_configuration_builder(self):
         config_builder = ConfigurationBuilder(ClickConfigurationBuilder)
-        engine_config_builder = config_builder.engine_configuration_builder_from_dict(self.config)
+        engine_config_builder = config_builder.engine_config_builder_from_dict(self.config)
         self.assertEqual(self.expected_click_config.to_engine_config(), engine_config_builder.to_engine_config())
 
 

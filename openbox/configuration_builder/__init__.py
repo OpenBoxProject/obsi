@@ -18,7 +18,7 @@ class ConfigurationBuilder(object):
     def required_engine_elements(self):
         return self.engine_builder.required_elements()
 
-    def engine_configuration_builder_from_dict(self, config, additional_requirements=None):
+    def engine_config_builder_from_dict(self, config, additional_requirements=None):
         open_box_configuration = OpenBoxConfiguration.from_dict(config, additional_requirements)
         engine_configuration = self.engine_builder.from_open_box_configuration(open_box_configuration)
         return engine_configuration

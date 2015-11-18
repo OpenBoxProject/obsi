@@ -46,7 +46,7 @@ class Manager(object):
         self._control_process = None
         self._watchdog = ProcessWatchdog(config.Watchdog.CHECK_INTERVAL)
         self.push_messages_receiver = PushMessageReceiver()
-        self.configuration_builder = ConfigurationBuilder(config.Engine.CONFIGURATION_BUILDER)
+        self.config_builder = ConfigurationBuilder(config.Engine.CONFIGURATION_BUILDER)
         self.message_handler = MessageHandler(self)
         self.message_sender = MessageSender()
         self.message_router = MessageRouter(self.message_sender, self.message_handler.default_message_handler)
@@ -57,7 +57,7 @@ class Manager(object):
         self._engine_running = False
         self._engine_running_lock = locks.Lock()
         self._processing_graph_set = False
-        self._engine_configuration_builder = None
+        self._engine_config_builder = None
         self._keep_alive_periodic_callback = None
         self._avg_cpu = 0
         self._avg_duration = 0
@@ -223,7 +223,7 @@ class Manager(object):
             app_log.error("EE Runner REST server has died")
             with (yield self._engine_running_lock.acquire()):
                 self._engine_running = False
-                # TODO: add recovering logic
+                # TODO: add recovering logic or at least send error
         elif process == self._control_process:
             app_log.error("EE Control REST server has died")
             # TODO: Add real handling
@@ -244,8 +244,8 @@ class Manager(object):
 
             # TODO: update this on Module installation and removal
             self._supported_elements_types = set(json_decode(response.body))
-            supported_blocks = set(self.configuration_builder.supported_blocks())
-            blocks_from_engine = set(self.configuration_builder.supported_blocks_from_supported_engine_elements_types(
+            supported_blocks = set(self.config_builder.supported_blocks())
+            blocks_from_engine = set(self.config_builder.supported_blocks_from_supported_engine_elements_types(
                 self._supported_elements_types))
             if supported_blocks != blocks_from_engine:
                 app_log.warning("There is a mismatched between supported blocks by OBSI "
@@ -298,11 +298,11 @@ class Manager(object):
             proto_messages.append(messages.AddCustomModuleRequest.__name__)
         if config.Engine.Capabilities.MODULE_REMOVAL:
             proto_messages.append(messages.RemoveCustomModuleRequest.__name__)
-        processing_blocks = self.configuration_builder.supported_blocks_from_supported_engine_elements_types(
+        processing_blocks = self.config_builder.supported_blocks_from_supported_engine_elements_types(
             self._supported_elements_types)
-        match_fields = self.configuration_builder.supported_match_fields()
+        match_fields = self.config_builder.supported_match_fields()
         complex_match = config.Engine.Capabilities.COMPLEX_MATCH
-        protocol_analyser_protocols = self.configuration_builder.supported_protocol_analyser_protocols()
+        protocol_analyser_protocols = self.config_builder.supported_protocol_analyser_protocols()
 
         return dict(proto_messages=proto_messages, processing_blocks=processing_blocks,
                     match_fields=match_fields, complex_match=complex_match,
@@ -348,16 +348,18 @@ class Manager(object):
         with (yield self._engine_running_lock.acquire()):
             if not self._engine_running:
                 raise EngineNotRunningError()
-        if not self._processing_graph_set or self._engine_configuration_builder is None:
+        if not self._processing_graph_set or self._engine_config_builder is None:
             raise ProcessingGraphNotSetError()
         else:
             (engine_element_name,
              engine_handler_name,
-             transform_function) = self._engine_configuration_builder.translate_block_read_handler(block_name,
-                                                                                                   handler_name)
+             transform_function) = self._engine_config_builder.translate_block_read_handler(block_name,
+                                                                                            handler_name)
+            element = url_escape(engine_element_name)
+            handler = url_escape(engine_handler_name)
             uri = _get_full_uri(config.Control.Rest.BASE_URI,
-                                config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=engine_element_name,
-                                                                                     handler=engine_handler_name))
+                                config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=element,
+                                                                                     handler=handler))
             client = httpclient.AsyncHTTPClient()
             response = yield client.fetch(uri)
             raise gen.Return(transform_function(json_decode(response.body)))
@@ -367,13 +369,13 @@ class Manager(object):
         with (yield self._engine_running_lock):
             if not self._engine_running:
                 raise EngineNotRunningError()
-        if not self._processing_graph_set or self._engine_configuration_builder is None:
+        if not self._processing_graph_set or self._engine_config_builder is None:
             raise ProcessingGraphNotSetError()
         else:
             (engine_element_name,
              engine_handler_name,
-             transform_function) = self._engine_configuration_builder.translate_block_write_handler(block_name,
-                                                                                                    handler_name)
+             transform_function) = self._engine_config_builder.translate_block_write_handler(block_name,
+                                                                                             handler_name)
             uri = _get_full_uri(config.Control.Rest.BASE_URI,
                                 config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=engine_element_name,
                                                                                      handler=engine_handler_name))
@@ -381,6 +383,27 @@ class Manager(object):
             client = httpclient.AsyncHTTPClient()
             yield client.fetch(uri, method='POST', body=body)
             raise gen.Return(True)
+
+    @gen.coroutine
+    def set_processing_graph(self, required_modules, blocks, connections):
+        processing_graph = dict(requirements=required_modules, blocks=blocks, connections=connections)
+        self._engine_config_builder = self.config_builder.engine_config_builder_from_dict(processing_graph,
+                                                                                          config.Engine.REQUIREMENTS)
+        engine_config = self._engine_config_builder.to_engine_config()
+
+        client = httpclient.AsyncHTTPClient()
+
+        uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.CONFIG)
+        yield client.fetch(uri, method='POST', body=json_encode(engine_config))
+
+        # make sure we are stable in the new config
+        # the config is in the same URI but with a GET method
+        response = yield client.fetch(uri)
+        new_config = json_decode(response.body)
+        if engine_config in new_config:
+            self._processing_graph_set = True
+        else:
+            app_log.error("Unable to set processing graph")
 
 
 def main():

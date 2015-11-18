@@ -23,7 +23,7 @@ class Manager:
 
 class KeepAlive:
     # The interval in milliseconds between KeepAlive messages
-    INTERVAL = 10 * 1000
+    INTERVAL = 30 * 1000
 
 
 class OpenBoxController:
@@ -56,8 +56,9 @@ class Engine:
     PUSH_MESSAGES_SOCKET_ENDPOINT = 10002
     PUSH_MESSAGES_CHANNEL = 'openbox'
     NTHREADS = 2
+    REQUIREMENTS = ['openbox']
     BASE_EMPTY_CONFIG = r'''ChatterSocket("{push_type}", {push_endpoint}, RETRIES 3, RETRY_WARNINGS false, CHANNEL {channel});
-ControlSocket({control_type}, {control_endpoint}, RETRIES 3, RETRY_WARNINGS false);
+ControlSocket("{control_type}", {control_endpoint}, RETRIES 3, RETRY_WARNINGS false);
 require(package "openbox");
 chatter_msg::ChatterMessage("EMPTY_KEEP_ALIVE", "message", CHANNEL {channel});
 timed_source::TimedSource(1, "base");
