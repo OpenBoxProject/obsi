@@ -1,4 +1,4 @@
-from exceptions import OpenBoxConfigurationError
+from configuration_builder_exceptions import OpenBoxConfigurationError
 from open_box_blocks import OpenBoxBlock
 from connection import Connection
 

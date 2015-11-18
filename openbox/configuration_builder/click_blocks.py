@@ -2,11 +2,11 @@ import functools
 import re
 import json
 
-from exceptions import ClickBlockConfigurationError
+from configuration_builder_exceptions import ClickBlockConfigurationError
 import transformations
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection
-from configuration_builder.exceptions import ConnectionConfigurationError
+from configuration_builder.configuration_builder_exceptions import ConnectionConfigurationError
 from open_box_blocks import OpenBoxBlock
 
 

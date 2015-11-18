@@ -1,4 +1,4 @@
-from exceptions import ConnectionConfigurationError
+from configuration_builder_exceptions import ConnectionConfigurationError
 
 
 class Connection(object):

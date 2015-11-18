@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import json
 
-from exceptions import OpenBoxBlockConfigurationError
+from configuration_builder_exceptions import OpenBoxBlockConfigurationError
 
 
 class FieldType:

@@ -1,4 +1,4 @@
-from exceptions import ClickElementConfigurationError
+from configuration_builder_exceptions import ClickElementConfigurationError
 
 
 class Argument(object):

@@ -1,6 +1,6 @@
 import unittest
 import configuration_builder.click_elements as elements
-from configuration_builder.exceptions import ClickElementConfigurationError
+from configuration_builder.configuration_builder_exceptions import ClickElementConfigurationError
 
 
 class TestNoArgsElement(unittest.TestCase):
