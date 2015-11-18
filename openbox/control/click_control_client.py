@@ -1,6 +1,7 @@
 import re
 import socket
 import collections
+import time
 
 from control_exceptions import (UnknownHandlerOperation, ControlError, ControlSyntaxError, HandlerError,
                         NoRouterInstalledError, NoSuchElementError, NoSuchHandlerError, PermissionDeniedError,
@@ -42,7 +43,7 @@ _EXCPTIONS_CODE_MAPPING = {
     ResponseCodes.NO_ROUTER_INSTALLED: NoRouterInstalledError
 }
 
-CONNECT_RETRIES = 3
+CONNECT_RETRIES = 50
 CHATTER_SOCKET_REGEXP = re.compile(r'ChatterSocket\(.*\)')
 CONTROL_SOCKET_REGEXP = re.compile(r'ControlSocket\(.*\)')
 
@@ -91,20 +92,20 @@ class ClickControlClient(object):
         return self._read_global('classes').strip().split('\n')
 
     def running_config(self):
-        return self._read_global('flatconfig')
+        return self._read_global('config')
 
     def hotswap(self, new_config):
         new_config = self._migrate_control_elements(new_config)
         self._write_global('hotconfig', data=new_config)
         for _ in xrange(CONNECT_RETRIES):
             try:
-                self._socket.close()
+                self.close()
                 self.connect(self.address, self.family)
                 # try to pull the config again to make sure we are reconnected
                 self.running_config()
                 break
             except socket.error:
-                pass
+                time.sleep(0.1)
 
     def elements_names(self):
         raw = self._read_global('list')
@@ -291,9 +292,6 @@ class ClickControlClient(object):
             new_config = control_socket + new_config
 
         return new_config
-
-
-
 
 if __name__ == "__main__":
     cs = ClickControlClient()
