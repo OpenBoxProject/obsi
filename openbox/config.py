@@ -70,7 +70,7 @@ timed_source -> chatter_msg -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_
                                                  control_endpoint=CONTROL_SOCKET_ENDPOINT)
 
     class Capabilities:
-        MODULE_INSTALLATION = True
+        MODULE_INSTALLATION = False
         MODULE_REMOVAL = False
         COMPLEX_MATCH = False
 
