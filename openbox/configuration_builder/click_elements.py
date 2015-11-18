@@ -1,14 +1,4 @@
-class ElementError(Exception):
-    """
-    Base for all Element related exceptions
-    """
-    pass
-
-
-class ElementConfigurationError(ElementError):
-    """
-    An error in an element's configuration
-    """
+from exceptions import ClickElementConfigurationError
 
 
 class Argument(object):
@@ -50,7 +40,7 @@ class MandatoryPositionalArgument(Argument):
     def from_dict(self, config, default=None):
         value = super(MandatoryPositionalArgument, self).from_dict(config, default)
         if value is None:
-            raise ElementConfigurationError("No mandatory argument named: {name}".format(name=self.name))
+            raise ClickElementConfigurationError("No mandatory argument named: {name}".format(name=self.name))
         else:
             return value
 
@@ -78,10 +68,11 @@ class ListArguments(Argument):
     """
     A list of arguments with the same name.
     """
+
     def from_dict(self, config, default=None):
         value = config.get(self.name, default or [])
         if not isinstance(value, list):
-            raise ElementConfigurationError("Argument must be a list")
+            raise ClickElementConfigurationError("Argument must be a list")
         return value
 
     def to_click_argument(self, value):
@@ -132,14 +123,14 @@ class Element(object):
         """
         element_type = config.get('type')
         if element_type is None:
-            raise ElementConfigurationError("No element type is given in the element's configuration")
+            raise ClickElementConfigurationError("No element type is given in the element's configuration")
         # noinspection PyUnresolvedReferences
         clazz = cls.elements_registry.get(element_type)
         if clazz is None:
-            raise ElementConfigurationError("Unknown element type %s" % element_type)
+            raise ClickElementConfigurationError("Unknown element type %s" % element_type)
         name = config.get('name')
         if name is None:
-            raise ElementConfigurationError("An element must have an instance name")
+            raise ClickElementConfigurationError("An element must have an instance name")
         element = clazz(name)
         config = config.get('config', {})
         if clazz.__list_arguments__ is not None:
@@ -257,7 +248,6 @@ def build_element(name, list_argument=None, mandatory_positional=None, optional_
 
 Idle = build_element('Idle')
 DiscardNoFree = build_element('DiscardNoFree')
-Discard = build_element('Discard', keywords=[KeywordArgument('active'), KeywordArgument('burst')])
 InfiniteSource = build_element('InfiniteSource',
                                optional_positional=(OptionalPositionalArgument('data'),
                                                     OptionalPositionalArgument('limit'),
@@ -267,6 +257,7 @@ InfiniteSource = build_element('InfiniteSource',
                                          KeywordArgument('stop'),
                                          KeywordArgument('end_call'),
                                          KeywordArgument('timestamp')))
+
 RandomSource = build_element('RandomSource',
                              mandatory_positional=[MandatoryPositionalArgument('length')],
                              optional_positional=(OptionalPositionalArgument('limit'),
@@ -298,3 +289,43 @@ FromDevice = build_element('FromDevice', mandatory_positional=[MandatoryPosition
 Counter = build_element('Counter',
                         read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
                         write_handlers=['reset_counts'])
+
+FromDump = build_element('FromDump', mandatory_positional=[MandatoryPositionalArgument('filename')],
+                         keywords=[KeywordArgument('stop'),
+                                   KeywordArgument('timing'),
+                                   KeywordArgument('sample'),
+                                   KeywordArgument('force_ip'),
+                                   KeywordArgument('start'),
+                                   KeywordArgument('start_after'),
+                                   KeywordArgument('end'),
+                                   KeywordArgument('end_after'),
+                                   KeywordArgument('interval'),
+                                   KeywordArgument('end_call'),
+                                   KeywordArgument('active'),
+                                   KeywordArgument('filepos'),
+                                   KeywordArgument('mmap'),
+                                   ],
+                         read_handlers=['count', 'active'],
+                         write_handlers=['reset_counts', 'reset_timing'])
+
+Discard = build_element('Discard',
+                        keywords=[KeywordArgument('active'),
+                                  KeywordArgument('burst'),
+                                  ],
+                        read_handlers=['count', 'active'],
+                        write_handlers=['reset_counts'])
+
+ToDump = build_element('ToDump',
+                       mandatory_positional=[
+                           MandatoryPositionalArgument('filename')
+                       ],
+                       keywords=[
+                           KeywordArgument('snaplen'),
+                           KeywordArgument('encap'),
+                           KeywordArgument('use_encap_from'),
+                           KeywordArgument('extra_length'),
+                           KeywordArgument('unbuffered'),
+                       ],
+                       read_handlers=[],
+                       write_handlers=[])
+

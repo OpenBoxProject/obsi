@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import json
 
+from exceptions import OpenBoxBlockConfigurationError
+
 
 class FieldType:
     BOOLEAN = 'boolean'
@@ -68,20 +70,6 @@ class OpenBoxBlockMeta(type):
             cls.blocks_registry[name] = cls
 
         super(OpenBoxBlockMeta, cls).__init__(name, bases, dct)
-
-
-class BlockError(Exception):
-    """
-    Base for all Block related errors
-    """
-    pass
-
-
-class OpenBoxBlockConfigurationError(BlockError):
-    """
-    An error in an OpenBox Block configuration
-    """
-    pass
 
 
 class OpenBoxBlock(object):
@@ -196,14 +184,60 @@ def build_open_box_from_json(json_block):
 
 
 FromDevice = build_open_box_block('FromDevice',
-                                  [ConfigField('devname', True, FieldType.STRING),
-                                   ConfigField('sniffer', False, FieldType.BOOLEAN),
-                                   ConfigField('promisc', False, FieldType.BOOLEAN),
-                                   ],
-                                  [HandlerField('count', FieldType.INTEGER),
+                                  config_fields=[
+                                      ConfigField('devname', True, FieldType.STRING),
+                                      ConfigField('sniffer', False, FieldType.BOOLEAN),
+                                      ConfigField('promisc', False, FieldType.BOOLEAN),
+                                  ],
+                                  read_handlers=[
+                                      HandlerField('count', FieldType.INTEGER),
+                                      HandlerField('byte_count', FieldType.INTEGER),
+                                      HandlerField('rate', FieldType.NUMBER),
+                                      HandlerField('byte_rate', FieldType.INTEGER),
+                                      HandlerField('drops', FieldType.STRING),
+                                  ],
+                                  write_handlers=[
+                                      HandlerField('reset_count', FieldType.NULL)
+                                  ])
+
+FromDump = build_open_box_block('FromDump',
+                                config_fields=[
+                                    ConfigField('filename', True, FieldType.STRING),
+                                    ConfigField('timing', False, FieldType.BOOLEAN),
+                                    ConfigField('active', False, FieldType.BOOLEAN),
+                                ],
+                                read_handlers=[
+                                    HandlerField('count', FieldType.INTEGER),
+                                    HandlerField('byte_count', FieldType.INTEGER),
+                                    HandlerField('rate', FieldType.NUMBER),
+                                    HandlerField('byte_rate', FieldType.INTEGER),
+                                    HandlerField('drops', FieldType.STRING),
+                                ],
+                                write_handlers=[
+                                    HandlerField('reset_count', FieldType.NULL),
+                                    HandlerField('active', FieldType.BOOLEAN)
+                                ])
+
+Discard = build_open_box_block('Discard',
+                               config_fields=[
+                               ],
+                               read_handlers=[
+                                   HandlerField('count', FieldType.INTEGER),
                                    HandlerField('byte_count', FieldType.INTEGER),
                                    HandlerField('rate', FieldType.NUMBER),
                                    HandlerField('byte_rate', FieldType.INTEGER),
                                    HandlerField('drops', FieldType.STRING),
-                                   ],
-                                  [HandlerField('reset_count', FieldType.NULL)])
+                               ],
+                               write_handlers=[
+                                   HandlerField('reset_count', FieldType.NULL),
+                                   HandlerField('active', FieldType.BOOLEAN)
+                               ])
+
+ToDump = build_open_box_block('ToDump',
+                              config_fields=[
+                                  ConfigField('filename', True, FieldType.STRING),
+                              ],
+                              read_handlers=[
+                              ],
+                              write_handlers=[
+                              ])

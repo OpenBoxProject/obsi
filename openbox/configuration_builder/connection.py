@@ -1,9 +1,4 @@
-class ConnectionError(Exception):
-    pass
-
-
-class ConnectionConfigurationError(ConnectionError):
-    pass
+from exceptions import ConnectionConfigurationError
 
 
 class Connection(object):

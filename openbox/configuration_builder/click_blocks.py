@@ -1,9 +1,13 @@
 import functools
 import re
 import json
+
+from exceptions import ClickBlockConfigurationError, ClickElementConfigurationError
 import transformations
-from click_elements import Element, ElementConfigurationError
-from connection import Connection, ConnectionConfigurationError
+from click_elements import Element, ClickElementConfigurationError
+from connection import Connection
+from configuration_builder.exceptions import ConnectionConfigurationError
+from open_box_blocks import OpenBoxBlock
 
 
 class ClickBlockMeta(type):
@@ -16,17 +20,6 @@ class ClickBlockMeta(type):
             cls.blocks_registry[name] = cls
 
         super(ClickBlockMeta, cls).__init__(name, bases, dct)
-
-
-class ClickBlockError(Exception):
-    """
-    Base class for all errors related to Click Blocks
-    """
-    pass
-
-
-class ClickBlockConfigurationError(ClickBlockError):
-    pass
 
 
 class ClickBlock(object):
@@ -59,10 +52,13 @@ class ClickBlock(object):
         for element_config in self.__elements__:
             try:
                 elements.append(self._create_element_instance(element_config))
-            except (ElementConfigurationError, KeyError) as e:
+            except (ClickElementConfigurationError, KeyError) as e:
                 raise ClickBlockConfigurationError(
                     "Unable to build click configuration for block {name}".format(name=self.block.name))
         return elements
+
+    def required_element_types(self):
+        return set(element_config['type'] for element_config in self.__elements__)
 
     def _create_element_instance(self, element_config):
         type = element_config['type']
@@ -150,6 +146,9 @@ class ClickBlock(object):
 
 def build_click_block(name, config_mapping=None, elements=None, connections=None, input=None, output=None,
                       read_mapping=None, write_mapping=None):
+    if name not in OpenBoxBlock.blocks_registry:
+        raise ValueError("Unknown OpenBoxBlock {name} named".format(name=name))
+
     config_mapping = config_mapping or {}
     elements = elements or ()
     connections = connections or ()
@@ -211,7 +210,7 @@ def _get_element_names(elements):
         try:
             parsed_element = Element.from_dict(element)
             element_names.add(parsed_element.name)
-        except ElementConfigurationError:
+        except ClickElementConfigurationError:
             raise ValueError('Illegal element configuration {config}'.format(config=element))
 
     return element_names
@@ -292,3 +291,46 @@ FromDevice = build_click_block('FromDevice',
                                                  byte_rate=('counter', 'byte_rate', 'to_float'),
                                                  drops=('from_device', 'kernel-drops', 'identity')),
                                write_mapping=dict(reset_counts=('counter', 'reset_counts', 'identity')))
+
+FromDump = build_click_block('FromDump',
+                             config_mapping=dict(filename=_no_transform('filename'),
+                                                 timing=_no_transform('timing'),
+                                                 active=_no_transform('active')),
+                             elements=[
+                                 dict(name='from_dump', type='FromDump',
+                                      config=dict(filename='$filename', timing='$timing', active='$active')),
+                                 dict(name='counter', type='Counter', config={})
+                             ],
+                             connections=[
+                                 dict(src='from_dump', dst='counter', src_port=0, dst_port=0),
+                             ],
+                             output='counter',
+                             read_mapping=dict(
+                                 count=('counter', 'count', 'to_int'),
+                                 byte_count=('counter', 'byte_count', 'to_int'),
+                                 rate=('counter', 'rate', 'to_float'),
+                                 byte_rate=('counter', 'byte_rate', 'to_float'),
+                             ),
+                             write_mapping=dict(
+                                 reset_counts=('counter', 'reset_counts', 'identity'),
+                                 active=('from_dump', 'active', 'identity'),
+                             ))
+
+Discard = build_click_block('Discard',
+                            elements=[
+                                dict(name='discard', type='Discard', config=dict()),
+                            ],
+                            input='discard',
+                            read_mapping=dict(
+                                count=('discard', 'count', 'to_int'),
+                            ),
+                            write_mapping=dict(
+                                reset_counts=('discard', 'reset_counts', 'identity'),
+                            ))
+
+ToDump = build_click_block('ToDump',
+                           config_mapping=dict(filename=_no_transform('filename')),
+                           elements=[
+                               dict(name='to_dump', type='ToDump', config=dict(filename='$filename')),
+                           ],
+                           input='to_dump')

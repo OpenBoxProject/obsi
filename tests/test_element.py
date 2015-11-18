@@ -1,5 +1,6 @@
 import unittest
 import configuration_builder.click_elements as elements
+from configuration_builder.exceptions import ClickElementConfigurationError
 
 
 class TestNoArgsElement(unittest.TestCase):
@@ -29,7 +30,7 @@ class TestMandatoryOnlyElement(unittest.TestCase):
 
     def test_no_mandatory_arg(self):
         config = dict(type='CheckAverageLength', name='chk')
-        self.assertRaises(elements.ElementConfigurationError, elements.Element.from_dict, config)
+        self.assertRaises(ClickElementConfigurationError, elements.Element.from_dict, config)
 
     def test_click_config_string(self):
         expected = 'chk::CheckAverageLength(12);'
