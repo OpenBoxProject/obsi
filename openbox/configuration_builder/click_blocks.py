@@ -243,7 +243,7 @@ def _update_handler_mapping(element_names, mapping, handler_type):
         raise TypeError("{handler_type} mapping is of the wrong type {type}".format(type=type(mapping),
                                                                                     handler_type=handler_type))
     new_mapping = {}
-    for k, v in mapping:
+    for k, v in mapping.iteritems():
         try:
             element_name, handler_name, transform_function_name = v
             if element_name not in element_names:
@@ -285,4 +285,10 @@ FromDevice = build_click_block('FromDevice',
                                connections=[
                                    dict(src='from_device', dst='counter', src_port=0, dst_port=0),
                                ],
-                               output='counter')
+                               output='counter',
+                               read_mapping=dict(count=('counter', 'count', 'to_int'),
+                                                 byte_count=('counter', 'byte_count', 'to_int'),
+                                                 rate=('counter', 'rate', 'to_float'),
+                                                 byte_rate=('counter', 'byte_rate', 'to_float'),
+                                                 drops=('from_device', 'kernel-drops', 'identity')),
+                               write_mapping=dict(reset_counts=('counter', 'reset_counts', 'identity')))
