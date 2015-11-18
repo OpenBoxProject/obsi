@@ -9,7 +9,7 @@ import psutil
 import config
 import messages
 import rest_server
-from exceptions import EngineNotRunningError, ProcessingGraphNotSetError
+from manager_exceptions import EngineNotRunningError, ProcessingGraphNotSetError
 from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
@@ -48,8 +48,8 @@ class Manager(object):
         self.push_messages_receiver = PushMessageReceiver()
         self.configuration_builder = ConfigurationBuilder(config.Engine.CONFIGURATION_BUILDER)
         self.message_handler = MessageHandler(self)
-        self.message_router = MessageRouter(self.message_handler.default_message_handler)
         self.message_sender = MessageSender()
+        self.message_router = MessageRouter(self.message_sender, self.message_handler.default_message_handler)
         self.state = ManagerState.EMPTY
         self._http_client = httpclient.HTTPClient()
         self._alert_registered = False
@@ -61,6 +61,7 @@ class Manager(object):
         self._keep_alive_periodic_callback = None
         self._avg_cpu = 0
         self._avg_duration = 0
+        self._supported_elements_types = []
 
     def start(self):
         app_log.info("Starting components")
@@ -240,6 +241,8 @@ class Manager(object):
         try:
             uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.SUPPORTED_ELEMENTS)
             response = self._http_client.fetch(uri)
+
+            # TODO: update this on Module installation and removal
             self._supported_elements_types = set(json_decode(response.body))
             supported_blocks = set(self.configuration_builder.supported_blocks())
             blocks_from_engine = set(self.configuration_builder.supported_blocks_from_supported_engine_elements_types(
@@ -250,7 +253,6 @@ class Manager(object):
 
         except httpclient.HTTPError:
             app_log.error("Unable to connect to EE control in order to get a list of supported elements types")
-
 
     @gen.coroutine
     def _start_message_router(self):
@@ -296,7 +298,8 @@ class Manager(object):
             proto_messages.append(messages.AddCustomModuleRequest.__name__)
         if config.Engine.Capabilities.MODULE_REMOVAL:
             proto_messages.append(messages.RemoveCustomModuleRequest.__name__)
-        processing_blocks = self.configuration_builder.supported_blocks()
+        processing_blocks = self.configuration_builder.supported_blocks_from_supported_engine_elements_types(
+            self._supported_elements_types)
         match_fields = self.configuration_builder.supported_match_fields()
         complex_match = config.Engine.Capabilities.COMPLEX_MATCH
         protocol_analyser_protocols = self.configuration_builder.supported_protocol_analyser_protocols()
@@ -342,7 +345,7 @@ class Manager(object):
 
     @gen.coroutine
     def read_block_value(self, block_name, handler_name):
-        with (yield self._engine_running_lock):
+        with (yield self._engine_running_lock.acquire()):
             if not self._engine_running:
                 raise EngineNotRunningError()
         if not self._processing_graph_set or self._engine_configuration_builder is None:

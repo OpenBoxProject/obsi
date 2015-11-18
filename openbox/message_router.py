@@ -1,11 +1,13 @@
 from tornado import gen
 from tornado.queues import Queue
-from messages import MessageMeta, Message
+import errors
+from messages import MessageMeta, Message, Error
 
 
 class MessageRouter(object):
-    def __init__(self, default_handler=None):
+    def __init__(self, message_sender, default_handler=None):
         self._queue = Queue()
+        self.message_sender = message_sender
         self.default_handler = default_handler
         self._message_handlers = {}
         self._working = False
@@ -27,11 +29,14 @@ class MessageRouter(object):
             message = yield self._queue.get()
             try:
                 # TODO: Maybe we need to add special handling for BarrierRequest
-                handler = self._message_handlers[message.type]
-                yield handler(message)
-            except KeyError:
-                if self.default_handler:
-                    yield self.default_handler(message)
+                handler = self._message_handlers.get(message.type, self.default_handler)
+                if handler:
+                    yield handler(message)
+            except Exception as e:
+                error_type, error_subtype, error_message, extended_message = errors.exception_to_error_args(e)
+                error_message = Error.from_request(message, error_type=error_type, error_subtype=error_subtype,
+                                                   message=error_message, extended_message=extended_message)
+                yield self.message_sender.send_message_ignore_response(error_message)
             finally:
                 self._queue.task_done()
 

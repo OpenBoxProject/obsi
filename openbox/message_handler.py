@@ -1,9 +1,7 @@
+import messages
 from tornado import gen
 from tornado.log import app_log
 from tornado.httpclient import AsyncHTTPClient
-from exceptions import ManagerError
-
-import messages
 
 
 def _get_full_uri(base, endpoint):
@@ -38,10 +36,8 @@ class MessageHandler(object):
     def handle_list_capabilities_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
         caps = self.manager.get_capabilities()
-        response = messages.ListCapabilitiesResponse.from_request(message,
-                                                                  capabilities=caps)
+        response = messages.ListCapabilitiesResponse.from_request(message, capabilities=caps)
         yield self.manager.message_sender.send_message_ignore_response(response)
-
 
     @gen.coroutine
     def handle_global_stats_request(self, message):
@@ -49,8 +45,6 @@ class MessageHandler(object):
         stats = yield self.manager.get_engine_global_stats()
         response = messages.GlobalStatsResponse.from_request(message, stats=stats)
         yield self.manager.message_sender.send_message_ignore_response(response)
-        # TODO: add error handling
-
 
     @gen.coroutine
     def handle_global_stats_reset(self, message):
@@ -60,64 +54,36 @@ class MessageHandler(object):
     @gen.coroutine
     def handle_read_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
-        try:
-            value = yield self.manager.read_block_value(message.block_id, message.read_handle)
-            if value is not None:
-                response = messages.ReadResponse.from_request(message, result=value)
-            else:
-                # TODO: improve error handling
-                response = messages.Error.from_request(message)
-        except (ValueError, ManagerError) as e:
-            # TODO: improve error handling
-            response = messages.Error.from_request(message)
-
+        value = yield self.manager.read_block_value(message.block_id, message.read_handle)
+        response = messages.ReadResponse.from_request(message, result=value)
         yield self.manager.message_sender.send_message_ignore_response(response)
 
     @gen.coroutine
     def handle_write_request(self, message):
         app_log.debug("Handling:{message}".format(message=message.to_json()))
-        try:
-            response = yield self.manager.write_block_value(message.block_id, message.write_handle)
-            if response:
-                response = messages.WriteResponse.from_request(message)
-        except (ValueError, ManagerError) as e:
-            # TODO: improve error handling
-            response = messages.Error.from_request(message)
-
+        yield self.manager.write_block_value(message.block_id, message.write_handle)
+        response = messages.WriteResponse.from_request(message)
         yield self.manager.message_sender.send_message_ignore_response(response)
 
     @gen.coroutine
     def handle_set_processing_graph_request(self, message):
         app_log.debug("Handling SetProcessingGraphRequest".format(message=message.to_json()))
-        response = yield self.manager.set_processing_graph(message.required_modules,
-                                                           message.blocks,
-                                                           message.connectors)
-        if response:
-            response = messages.SetProcessingGraphResponse.from_request(message)
-        else:
-            # TODO: improve error handling
-            response = messages.Error.from_request(message)
+        yield self.manager.set_processing_graph(message.required_modules, message.blocks, message.connectors)
+        response = messages.SetProcessingGraphResponse.from_request(message)
         yield self.manager.message_sender.send_message_ignore_response(response)
 
     @gen.coroutine
     def handle_barrier_request(self, message):
         app_log.info("Received BarrierRequest")
 
-
     @gen.coroutine
     def handle_error(self, message):
-        app_log.error("Received error message for xid:{xid}".format(xid=message.xid))
-
+        app_log.error("Received Error message:{message}".format(message=message.to_json()))
 
     @gen.coroutine
     def handle_add_custom_module_request(self, message):
         app_log.debug("Handling AddCustomModuleRequest")
-        response = yield self.manager.add_custom_module(message.module_name,
-                                                        message.module_content,
+        response = yield self.manager.add_custom_module(message.module_name, message.module_content,
                                                         message.content_transfer_encoding)
-        if response:
-            response = messages.SetProcessingGraphResponse.from_request(message)
-        else:
-            # TODO: improve error handling
-            response = messages.Error.from_request(message)
+        response = messages.SetProcessingGraphResponse.from_request(message)
         yield self.manager.message_sender.send_message_ignore_response(response)
