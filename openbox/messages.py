@@ -190,3 +190,11 @@ class RemoveCustomModuleRequest(MessageRequest):
 
 class RemoveCustomModuleResponse(MessageResponse):
     __slots__ = ['xid']
+
+
+class Alert(MessageRequest):
+    __slots__ = ['xid', 'origin_dpid', 'messages']
+
+
+class Log(MessageRequest):
+    __slots__ = ['xid', 'origin_dpid', 'messages']

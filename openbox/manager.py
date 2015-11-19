@@ -2,6 +2,7 @@
 """
 An OBSI's Manager.
 """
+import functools
 import socket
 import time
 import sys
@@ -18,7 +19,7 @@ from configuration_builder import ConfigurationBuilder
 from message_handler import MessageHandler
 from message_sender import MessageSender
 from watchdog import ProcessWatchdog
-from push_message_receiver import PushMessageReceiver
+from push_message_receiver import PushMessageReceiver, PushMessageHandler
 from message_router import MessageRouter
 from uuid import getnode
 
@@ -62,6 +63,8 @@ class Manager(object):
         self._avg_cpu = 0
         self._avg_duration = 0
         self._supported_elements_types = []
+        self._alert_messages_handler = None
+        self._log_messages_handler = None
 
     def start(self):
         app_log.info("Starting components")
@@ -231,7 +234,15 @@ class Manager(object):
             app_log.error("Unknown process dies")
 
     def _start_push_messages_receiver(self):
-        app_log.info("Starting PushMessagesReceiver")
+        app_log.info("Starting PushMessagesReceiver and registering Alert handling")
+        url = None # this will force the message sender to use the URL based on the message type
+        send_alert_messages = functools.partial(self.message_sender.send_push_messages, messages.Alert, self.obsi_id,
+                                                url)
+        self._alert_messages_handler = PushMessageHandler(send_alert_messages,
+                                                          config.PushMessages.Alert.BUFFER_SIZE,
+                                                          config.PushMessages.Log.BUFFER_TIMEOUT)
+
+        self.push_messages_receiver.register_message_handler('ALERT', self._alert_messages_handler.add)
         self.push_messages_receiver.connect(config.PushMessages.SOCKET_ADDRESS,
                                             config.PushMessages.SOCKET_FAMILY,
                                             config.PushMessages.RETRY_INTERVAL)

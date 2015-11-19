@@ -60,14 +60,17 @@ class Engine:
     BASE_EMPTY_CONFIG = r'''ChatterSocket("{push_type}", {push_endpoint}, RETRIES 3, RETRY_WARNINGS false, CHANNEL {channel});
 ControlSocket("{control_type}", {control_endpoint}, RETRIES 3, RETRY_WARNINGS false);
 require(package "openbox");
-chatter_msg::ChatterMessage("EMPTY_KEEP_ALIVE", "message", CHANNEL {channel});
+chatter_msg::ChatterMessage("ALERT", "{test_alert_message}", CHANNEL {channel});
 timed_source::TimedSource(1, "base");
 discard::Discard();
 timed_source -> chatter_msg -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_TYPE,
                                                  push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
                                                  channel=PUSH_MESSAGES_CHANNEL,
                                                  control_type=CONTROL_SOCKET_TYPE,
-                                                 control_endpoint=CONTROL_SOCKET_ENDPOINT)
+                                                 control_endpoint=CONTROL_SOCKET_ENDPOINT,
+                                                 test_alert_message=r'{\"message\": \"This is a test alert\",'
+                                                                    r' \"origin_block\": \"chatter_msg\",'
+                                                                    r' \"packet\": \"00 00 00 00\"}')
 
     class Capabilities:
         MODULE_INSTALLATION = False
@@ -102,3 +105,11 @@ class PushMessages:
     SOCKET_ADDRESS = (
         'localhost', Engine.PUSH_MESSAGES_SOCKET_ENDPOINT) if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else Engine.PUSH_MESSAGES_SOCKET_ENDPOINT
     RETRY_INTERVAL = 1
+
+    class Alert:
+        BUFFER_SIZE = 10
+        BUFFER_TIMEOUT = 5  # in seconds
+
+    class Log:
+        BUFFER_SIZE = 1000
+        BUFFER_TIMEOUT = 1
