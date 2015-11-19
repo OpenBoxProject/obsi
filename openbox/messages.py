@@ -209,3 +209,11 @@ class SetParametersResponse(MessageResponse):
     __slots__ = ['xid']
     __request__ = SetParametersRequest
 
+
+class GetParametersRequest(MessageRequest):
+    __slots__ = ['xid', 'parameters']
+
+
+class GetParametersResponse(MessageResponse):
+    __slots__ = ['xid']
+    __request__ = GetParametersRequest

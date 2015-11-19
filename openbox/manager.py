@@ -465,6 +465,28 @@ class Manager(object):
             self._log_messages_handler.buffer_size = config.PushMessages.Log.BUFFER_SIZE
             self._log_messages_handler.buffer_timeout = config.PushMessages.Log.BUFFER_TIMEOUT
 
+    def get_parameters(self, parameters):
+        result = dict(keepalive_interval=config.KeepAlive.INTERVAL,
+                      alert_messages_buffer_size=config.PushMessages.Alert.BUFFER_SIZE,
+                      alert_messages_buffer_timeout=config.PushMessages.Alert.BUFFER_TIMEOUT * 1000.0,
+                      log_messages_buffer_size=config.PushMessages.Log.BUFFER_SIZE,
+                      log_messages_buffer_timeout=config.PushMessages.Log.BUFFER_TIMEOUT * 1000.0,
+                      log_server_address=config.PushMessages.Log.SERVER_ADDRESS,
+                      log_server_port=config.PushMessages.Log.SERVER_PORT)
+        if not parameters:
+            # an empty list means they want all of them
+            return result
+        else:
+            try:
+                partial = {}
+                for parameter in parameters:
+                    partial[parameter] = result[parameter]
+
+                return partial
+            except KeyError:
+                # TODO: Better error
+                raise
+
 
 def main():
     options.define('port', default=config.RestServer.PORT, type=int, help="The server's port. ")
