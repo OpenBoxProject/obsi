@@ -3,8 +3,52 @@ An implementation of an Execution Engine Push Message Receiver.
 """
 import json
 import socket
+import time
+from tornado import gen, locks
 from tornado.iostream import IOStream
 from tornado.ioloop import IOLoop
+from tornado.log import app_log
+
+
+class PushMessageHandler(object):
+    def __init__(self, sender, buffer_size=1, buffer_timeout=0):
+        self._sender = sender
+        self.buffer_size = buffer_size
+        self.buffer_timeout = buffer_timeout
+        self._buffered_messages = []
+        self._buffered_messages_lock = locks.Lock()
+        self._flush_timer = None
+        self._id = 0
+
+
+    @gen.coroutine
+    def add(self, message):
+        app_log.debug("Added message")
+        # after decoding the JSON we get a dict with the specific format is different for each type
+        # We need to add an ID and timestamp for the message
+        message = json.loads(message)
+        message['timestamp'] = time.time()
+        message['id'] = self._id
+        self._id += 1
+        with (yield self._buffered_messages_lock.acquire()):
+            self._buffered_messages.append(message)
+            need_to_flush = len(self._buffered_messages) == self.buffer_size
+            first_message = len(self._buffered_messages) == 1
+        if need_to_flush:
+            yield self._flush_buffer()
+        elif first_message:
+            self._flush_timer = IOLoop.current().call_later(self.buffer_timeout, self._flush_buffer)
+
+    @gen.coroutine
+    def _flush_buffer(self):
+        app_log.debug("flushing buffer")
+        if self._flush_timer:
+            IOLoop.current().remove_timeout(self._flush_timer)
+        with (yield self._buffered_messages_lock.acquire()):
+            messages = self._buffered_messages[:]
+            self._buffered_messages = []
+
+        yield self._sender(messages)
 
 
 class PushMessageReceiver(object):
@@ -17,6 +61,7 @@ class PushMessageReceiver(object):
         self._registered_handlers = {}
 
     def register_message_handler(self, message_type, handler):
+        app_log.debug("Registered {type}".format(type=message_type))
         self._registered_handlers[message_type] = handler
 
     def unregister_message_handler(self, message_type):
