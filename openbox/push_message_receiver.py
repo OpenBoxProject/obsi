@@ -32,7 +32,7 @@ class PushMessageHandler(object):
         self._id += 1
         with (yield self._buffered_messages_lock.acquire()):
             self._buffered_messages.append(message)
-            need_to_flush = len(self._buffered_messages) == self.buffer_size
+            need_to_flush = len(self._buffered_messages) >= self.buffer_size
             first_message = len(self._buffered_messages) == 1
         if need_to_flush:
             yield self._flush_buffer()
