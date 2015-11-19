@@ -64,6 +64,16 @@ def exception_to_error_args(exc_type, exc_value, exc_tb):
         error_type = ErrorType.BAD_REQUEST
         error_subtype = ErrorSubType.ILLEGAL_STATE
         exception_message = "Processing graph is not set"
+    elif exc_type in (EngineElementConfigurationError, ClickElementConfigurationError, ClickBlockConfigurationError,
+                      OpenBoxBlockConfigurationError):
+        error_type = ErrorType.BAD_REQUEST
+        error_subtype = ErrorSubType.BAD_BLOCK
+    elif exc_type == ConnectionConfigurationError:
+        error_type = ErrorType.BAD_REQUEST
+        error_subtype = ErrorSubType.BAD_CONNECTOR
+    elif exc_type in (OpenBoxConfigurationError, EngineConfigurationError, ConfigurationError):
+        error_type = ErrorType.BAD_REQUEST
+        error_subtype = ErrorSubType.BAD_GRAPH
 
     return error_type, error_subtype, exception_message, extended_message
 
