@@ -4,10 +4,10 @@ An implementation of an Execution Engine Push Message Receiver.
 import json
 import socket
 import time
+
 from tornado import gen, locks
 from tornado.iostream import IOStream
 from tornado.ioloop import IOLoop
-from tornado.log import app_log
 
 
 class PushMessageHandler(object):
@@ -23,7 +23,6 @@ class PushMessageHandler(object):
 
     @gen.coroutine
     def add(self, message):
-        app_log.debug("Added message")
         # after decoding the JSON we get a dict with the specific format is different for each type
         # We need to add an ID and timestamp for the message
         message = json.loads(message)
@@ -41,7 +40,6 @@ class PushMessageHandler(object):
 
     @gen.coroutine
     def _flush_buffer(self):
-        app_log.debug("flushing buffer")
         if self._flush_timer:
             IOLoop.current().remove_timeout(self._flush_timer)
         with (yield self._buffered_messages_lock.acquire()):
@@ -64,7 +62,6 @@ class PushMessageReceiver(object):
         self._registered_handlers = {}
 
     def register_message_handler(self, message_type, handler):
-        app_log.debug("Registered {type}".format(type=message_type))
         self._registered_handlers[message_type] = handler
 
     def unregister_message_handler(self, message_type):
