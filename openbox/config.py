@@ -111,5 +111,8 @@ class PushMessages:
         BUFFER_TIMEOUT = 5  # in seconds
 
     class Log:
+        SERVER_ADDRESS = None
+        SERVER_PORT = None
         BUFFER_SIZE = 1000
         BUFFER_TIMEOUT = 1
+        _SERVER_CHANGED = False  # an ugly hack to help with updating

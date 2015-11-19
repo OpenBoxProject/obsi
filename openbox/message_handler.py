@@ -25,7 +25,8 @@ class MessageHandler(object):
             messages.SetProcessingGraphRequest: self.handle_set_processing_graph_request,
             messages.BarrierRequest: self.handle_barrier_request,
             messages.Error: self.handle_error,
-            messages.AddCustomModuleRequest: self.handle_add_custom_module_request
+            messages.AddCustomModuleRequest: self.handle_add_custom_module_request,
+            messages.SetParametersRequest: self.handle_set_parameters_request
         }
 
     @gen.coroutine
@@ -83,7 +84,14 @@ class MessageHandler(object):
     @gen.coroutine
     def handle_add_custom_module_request(self, message):
         app_log.debug("Handling AddCustomModuleRequest")
-        response = yield self.manager.add_custom_module(message.module_name, message.module_content,
+        yield self.manager.add_custom_module(message.module_name, message.module_content,
                                                         message.content_transfer_encoding)
         response = messages.SetProcessingGraphResponse.from_request(message)
+        yield self.manager.message_sender.send_message_ignore_response(response)
+
+    @gen.coroutine
+    def handle_set_parameters_request(self, message):
+        app_log.debug('Handling SetParametersRequest')
+        self.manager.set_parameters(message.parameters)
+        response = messages.SetParametersResponse.from_request(message)
         yield self.manager.message_sender.send_message_ignore_response(response)

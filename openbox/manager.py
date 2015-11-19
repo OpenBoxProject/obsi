@@ -235,12 +235,12 @@ class Manager(object):
 
     def _start_push_messages_receiver(self):
         app_log.info("Starting PushMessagesReceiver and registering Alert handling")
-        url = None # this will force the message sender to use the URL based on the message type
+        url = None  # this will force the message sender to use the URL based on the message type
         send_alert_messages = functools.partial(self.message_sender.send_push_messages, messages.Alert, self.obsi_id,
                                                 url)
         self._alert_messages_handler = PushMessageHandler(send_alert_messages,
                                                           config.PushMessages.Alert.BUFFER_SIZE,
-                                                          config.PushMessages.Log.BUFFER_TIMEOUT)
+                                                          config.PushMessages.Alert.BUFFER_TIMEOUT)
 
         self.push_messages_receiver.register_message_handler('ALERT', self._alert_messages_handler.add)
         self.push_messages_receiver.connect(config.PushMessages.SOCKET_ADDRESS,
@@ -415,6 +415,55 @@ class Manager(object):
             self._processing_graph_set = True
         else:
             app_log.error("Unable to set processing graph")
+
+    @gen.coroutine
+    def set_parameters(self, params):
+        config.KeepAlive.INTERVAL = params.get('keepalive_interval', config.KeepAlive.INTERVAL)
+        config.PushMessages.Alert.BUFFER_SIZE = params.get('alert_messages_buffer_size',
+                                                           config.PushMessages.Alert.BUFFER_SIZE)
+        config.PushMessages.Alert.BUFFER_TIMEOUT = params.get('alert_messages_buffer_timeout',
+                                                              config.PushMessages.Alert.BUFFER_TIMEOUT * 1000.0) / 1000.0
+        config.PushMessages.Log.BUFFER_SIZE = params.get('log_messages_buffer_size',
+                                                         config.PushMessages.Log.BUFFER_SIZE)
+        config.PushMessages.Log.BUFFER_TIMEOUT = params.get('log_messages_buffer_timeout',
+                                                            config.PushMessages.Log.BUFFER_TIMEOUT * 1000.0) / 1000.0
+        old_server, old_port = config.PushMessages.Log.SERVER_ADDRESS, config.PushMessages.Log.SERVER_PORT
+        config.PushMessages.Log.SERVER_ADDRESS = params.get('log_server_address',
+                                                            config.PushMessages.Log.SERVER_ADDRESS)
+        config.PushMessages.Log.SERVER_PORT = params.get('log_server_port', config.PushMessages.Log.SERVER_PORT)
+        new_server, new_port = config.PushMessages.Log.SERVER_ADDRESS, config.PushMessages.Log.SERVER_PORT
+        config.PushMessages.Log._SERVER_CHANGED = new_server != old_server or new_port != old_port
+
+        self._update_components()
+
+    def _update_components(self):
+        # update keepalive
+        if self._keep_alive_periodic_callback:
+            self._keep_alive_periodic_callback.stop()
+            self._start_sending_keep_alive()
+
+        # update alert push messages
+        if self._alert_messages_handler:
+            self._alert_messages_handler.buffer_size = config.PushMessages.Alert.BUFFER_SIZE
+            self._alert_messages_handler.buffer_timeout = config.PushMessages.Alert.BUFFER_TIMEOUT
+
+        # update log push messages
+        if config.PushMessages.Log.SERVER_PORT and config.PushMessages.Log.SERVER_PORT:
+            url = "http://{host}:{port}/message/Log"
+            send_log_messages = functools.partial(self.message_sender.send_push_messages, messages.Log,
+                                                  self.obsi_id, url)
+            if config.PushMessages.Log._SERVER_CHANGED:
+                # better close it and make it start over
+                if self._log_messages_handler:
+                    self._log_messages_handler.close()
+                self.push_messages_receiver.unregister_message_handler('LOG')
+                self._log_messages_handler = PushMessageHandler(send_log_messages,
+                                                                config.PushMessages.Log.BUFFER_SIZE,
+                                                                config.PushMessages.Log.BUFFER_TIMEOUT)
+                self.push_messages_receiver.register_message_handler('LOG', self._alert_messages_handler.add)
+        if self._log_messages_handler:
+            self._log_messages_handler.buffer_size = config.PushMessages.Log.BUFFER_SIZE
+            self._log_messages_handler.buffer_timeout = config.PushMessages.Log.BUFFER_TIMEOUT
 
 
 def main():
