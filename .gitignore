@@ -4,4 +4,7 @@
 .idea/*
 *.pyc
 openbox/*.pyc
+openbox/runner/*.pyc
+openbox/control/*.pyc
+out
 
