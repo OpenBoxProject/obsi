@@ -215,5 +215,5 @@ class GetParametersRequest(MessageRequest):
 
 
 class GetParametersResponse(MessageResponse):
-    __slots__ = ['xid']
+    __slots__ = ['xid', 'parameters']
     __request__ = GetParametersRequest

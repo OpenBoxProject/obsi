@@ -23,7 +23,7 @@ class PushMessageHandler(object):
 
     @gen.coroutine
     def add(self, message):
-        # after decoding the JSON we get a dict with the specific format is different for each type
+        # after decoding the JSON we get a dict with the message, specific format is different for each type
         # We need to add an ID and timestamp for the message
         message = json.loads(message)
         message['timestamp'] = time.time()

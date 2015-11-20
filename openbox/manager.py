@@ -449,7 +449,8 @@ class Manager(object):
 
         # update log push messages
         if config.PushMessages.Log.SERVER_PORT and config.PushMessages.Log.SERVER_PORT:
-            url = "http://{host}:{port}/message/Log"
+            url = "http://{host}:{port}/message/Log".format(host=config.PushMessages.Log.SERVER_ADDRESS,
+                                                            port=config.PushMessages.Log.SERVER_PORT)
             send_log_messages = functools.partial(self.message_sender.send_push_messages, messages.Log,
                                                   self.obsi_id, url)
             if config.PushMessages.Log._SERVER_CHANGED:
@@ -460,17 +461,17 @@ class Manager(object):
                 self._log_messages_handler = PushMessageHandler(send_log_messages,
                                                                 config.PushMessages.Log.BUFFER_SIZE,
                                                                 config.PushMessages.Log.BUFFER_TIMEOUT)
-                self.push_messages_receiver.register_message_handler('LOG', self._alert_messages_handler.add)
+                self.push_messages_receiver.register_message_handler('LOG', self._log_messages_handler.add)
         if self._log_messages_handler:
             self._log_messages_handler.buffer_size = config.PushMessages.Log.BUFFER_SIZE
             self._log_messages_handler.buffer_timeout = config.PushMessages.Log.BUFFER_TIMEOUT
 
     def get_parameters(self, parameters):
-        result = dict(keepalive_interval=config.KeepAlive.INTERVAL,
+        result = dict(keepalive_interval=int(config.KeepAlive.INTERVAL),
                       alert_messages_buffer_size=config.PushMessages.Alert.BUFFER_SIZE,
-                      alert_messages_buffer_timeout=config.PushMessages.Alert.BUFFER_TIMEOUT * 1000.0,
+                      alert_messages_buffer_timeout=int(config.PushMessages.Alert.BUFFER_TIMEOUT * 1000),
                       log_messages_buffer_size=config.PushMessages.Log.BUFFER_SIZE,
-                      log_messages_buffer_timeout=config.PushMessages.Log.BUFFER_TIMEOUT * 1000.0,
+                      log_messages_buffer_timeout=int(config.PushMessages.Log.BUFFER_TIMEOUT * 1000),
                       log_server_address=config.PushMessages.Log.SERVER_ADDRESS,
                       log_server_port=config.PushMessages.Log.SERVER_PORT)
         if not parameters:

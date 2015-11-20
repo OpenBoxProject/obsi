@@ -60,17 +60,22 @@ class Engine:
     BASE_EMPTY_CONFIG = r'''ChatterSocket("{push_type}", {push_endpoint}, RETRIES 3, RETRY_WARNINGS false, CHANNEL {channel});
 ControlSocket("{control_type}", {control_endpoint}, RETRIES 3, RETRY_WARNINGS false);
 require(package "openbox");
-chatter_msg::ChatterMessage("ALERT", "{test_alert_message}", CHANNEL {channel});
+alert::ChatterMessage("ALERT", "{test_alert_message}", CHANNEL {channel});
+log::ChatterMessage("LOG", "{test_log_message}", CHANNEL {channel});
 timed_source::TimedSource(1, "base");
 discard::Discard();
-timed_source -> chatter_msg -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_TYPE,
-                                                 push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
-                                                 channel=PUSH_MESSAGES_CHANNEL,
-                                                 control_type=CONTROL_SOCKET_TYPE,
-                                                 control_endpoint=CONTROL_SOCKET_ENDPOINT,
-                                                 test_alert_message=r'{\"message\": \"This is a test alert\",'
-                                                                    r' \"origin_block\": \"chatter_msg\",'
-                                                                    r' \"packet\": \"00 00 00 00\"}')
+timed_source -> alert -> log -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_TYPE,
+                                                  push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
+                                                  channel=PUSH_MESSAGES_CHANNEL,
+                                                  control_type=CONTROL_SOCKET_TYPE,
+                                                  control_endpoint=CONTROL_SOCKET_ENDPOINT,
+                                                  test_alert_message=r'{\"message\": \"This is a test alert\",'
+                                                                     r' \"origin_block\": \"alert\",'
+                                                                     r' \"packet\": \"00 00 00 00\"}',
+                                                  test_log_message=r'{\"message\": \"This is a test log\",'
+                                                                   r' \"origin_block\": \"log\",'
+                                                                   r' \"packet\": \"00 00 00 00\"}'
+                                                  )
 
     class Capabilities:
         MODULE_INSTALLATION = False
@@ -103,16 +108,17 @@ class Control:
 class PushMessages:
     SOCKET_FAMILY = socket.AF_INET if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else socket.AF_UNIX
     SOCKET_ADDRESS = (
-        'localhost', Engine.PUSH_MESSAGES_SOCKET_ENDPOINT) if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else Engine.PUSH_MESSAGES_SOCKET_ENDPOINT
+        'localhost',
+        Engine.PUSH_MESSAGES_SOCKET_ENDPOINT) if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else Engine.PUSH_MESSAGES_SOCKET_ENDPOINT
     RETRY_INTERVAL = 1
 
     class Alert:
-        BUFFER_SIZE = 10
-        BUFFER_TIMEOUT = 5  # in seconds
+        BUFFER_SIZE = 1
+        BUFFER_TIMEOUT = 1  # in seconds
 
     class Log:
         SERVER_ADDRESS = None
         SERVER_PORT = None
-        BUFFER_SIZE = 1000
+        BUFFER_SIZE = 1
         BUFFER_TIMEOUT = 1
         _SERVER_CHANGED = False  # an ugly hack to help with updating
