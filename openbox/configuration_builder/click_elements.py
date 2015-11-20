@@ -23,6 +23,8 @@ class Argument(object):
         """
         Get click's argument representation
         """
+        if isinstance(value, bool):
+            return str(value).lower()
         return value
 
     def __eq__(self, other):
@@ -59,6 +61,7 @@ class KeywordArgument(Argument):
 
     def to_click_argument(self, value):
         if value:
+            value = super(KeywordArgument, self).to_click_argument(value)
             return '{name} {value}'.format(name=self.name.upper(), value=value)
         else:
             return None
@@ -78,7 +81,7 @@ class ListArguments(Argument):
     def to_click_argument(self, value):
         if not isinstance(value, (list, tuple)):
             raise TypeError("Value should be a list/tuple and not %s" % type(value))
-        return ', '.join(value)
+        return ', '.join(super(ListArguments, self).to_click_argument(val) for val in value)
 
 
 class ElementMeta(type):
@@ -329,3 +332,16 @@ ToDump = build_element('ToDump',
                        read_handlers=[],
                        write_handlers=[])
 
+PushMessage = build_element('PushMessage',
+                            mandatory_positional=[
+                                MandatoryPositionalArgument('type'),
+                                MandatoryPositionalArgument('msg'),
+                            ],
+                            keywords=[
+                                KeywordArgument('active'),
+                                KeywordArgument('channel'),
+                                KeywordArgument('attach_packet'),
+                                KeywordArgument('packet_size'),
+                            ],
+                            read_handlers=[],
+                            write_handlers=[])
