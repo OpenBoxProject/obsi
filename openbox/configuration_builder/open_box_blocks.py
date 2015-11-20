@@ -251,3 +251,27 @@ ToDump = build_open_box_block('ToDump',
                               ],
                               write_handlers=[
                               ])
+
+Log = build_open_box_block('Log',
+                           config_fields=[
+                               ConfigField('message', True, FieldType.STRING),
+                               ConfigField('severity', False, FieldType.INTEGER),
+                               ConfigField('attach_packet', False, FieldType.BOOLEAN),
+                               ConfigField('packet_size', False, FieldType.INTEGER),
+                           ],
+                           read_handlers=[
+                           ],
+                           write_handlers=[
+                           ])
+
+Alert = build_open_box_block('Alert',
+                             config_fields=[
+                                 ConfigField('message', True, FieldType.STRING),
+                                 ConfigField('severity', False, FieldType.INTEGER),
+                                 ConfigField('attach_packet', False, FieldType.BOOLEAN),
+                                 ConfigField('packet_size', False, FieldType.INTEGER),
+                             ],
+                             read_handlers=[
+                             ],
+                             write_handlers=[
+                             ])

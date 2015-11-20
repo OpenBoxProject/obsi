@@ -1,6 +1,7 @@
 import functools
 import re
 import json
+import sys
 
 from configuration_builder_exceptions import ClickBlockConfigurationError
 import transformations
@@ -58,7 +59,8 @@ class ClickBlock(object):
                 elements.append(self._create_element_instance(element_config))
             except (ClickElementConfigurationError, KeyError) as e:
                 raise ClickBlockConfigurationError(
-                    "Unable to build click configuration for block {name}".format(name=self.block.name))
+                    "Unable to build click configuration for block {name}".format(name=self.block.name)), None, \
+                    sys.exc_info()[2]
         return elements
 
     @classmethod
@@ -339,3 +341,29 @@ ToDump = build_click_block('ToDump',
                                dict(name='to_dump', type='ToDump', config=dict(filename='$filename')),
                            ],
                            input='to_dump')
+
+Log = build_click_block('Log',
+                        config_mapping=dict(content=(['name', 'severity', 'message'], 'to_push_message_content'),
+                                            attach_packet=_no_transform('attach_packet'),
+                                            packet_size=_no_transform('packet_size')
+                                            ),
+                        elements=[
+                            dict(name='push_message', type='PushMessage',
+                                 config=dict(type='LOG', msg='$content', channel='openbox',
+                                             attach_packet='$attach_packet', packet_size='$packet_size')),
+                        ],
+                        input='push_message',
+                        output='push_message')
+
+Alert = build_click_block('Alert',
+                          config_mapping=dict(content=(['name', 'severity', 'message'], 'to_push_message_content'),
+                                              attach_packet=_no_transform('attach_packet'),
+                                              packet_size=_no_transform('packet_size')
+                                              ),
+                          elements=[
+                              dict(name='push_message', type='PushMessage',
+                                   config=dict(type='ALERT', msg='$content', channel='openbox',
+                                               attach_packet='$attach_packet', packet_size='$packet_size')),
+                          ],
+                          input='push_message',
+                          output='push_message')
