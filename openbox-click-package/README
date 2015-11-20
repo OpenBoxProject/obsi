@@ -1,0 +1,28 @@
+A SAMPLE PACKAGE
+================
+
+    Click supports dynamically linked 'packages' containing extra elements.
+This is a package with elements used by the openbox project. 
+
+
+INSTALLATION
+------------
+
+    This section describes how you can install this package -- which is
+named 'openbox'. 
+
+    Before you can build a package, you must install Click into some
+directory DIR. (You set DIR with the '--prefix=DIR' option to Click's
+'./configure'.) We often use '/usr/local/click', but if you do not have
+permission on that directory, '$HOME' or '$HOME/click' works just as well.
+
+    Now you must configure your package, telling it where the Click install
+directory is. First run the 'autoconf' tool to generate a 'configure' script. 
+Then './configure --prefix=DIR', where DIR is the Click install directory. 
+The package will be installed in DIR, where the Click drivers can find it. 
+(The package './configure' has several interesting options, like 
+'--disable-linuxmodule'; run './configure --help' to see them.)
+
+    Next, just run 'make install'. This will build and install element
+collections for both drivers, manual pages for the package's elements, and
+an 'elementmap' for the package.
