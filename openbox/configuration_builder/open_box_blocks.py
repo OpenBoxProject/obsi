@@ -275,3 +275,10 @@ Alert = build_open_box_block('Alert',
                              ],
                              write_handlers=[
                              ])
+
+ContentClassifier = build_open_box_block('ContentClassifier',
+                                         config_fields=[
+                                             ConfigField('pattern', True, FieldType.ARRAY)
+                                         ],
+                                         read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
+                                         write_handlers=['reset_counts'])
