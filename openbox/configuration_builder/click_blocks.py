@@ -396,7 +396,7 @@ Discard = build_click_block('Discard',
 ToDump = build_click_block('ToDump',
                            config_mapping=dict(filename=_no_transform('filename')),
                            elements=[
-                               dict(name='to_dump', type='ToDump', config=dict(filename='$filename')),
+                               dict(name='to_dump', type='ToDump', config=dict(filename='$filename', unbuffered=True)),
                            ],
                            input='to_dump')
 
