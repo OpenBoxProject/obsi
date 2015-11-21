@@ -401,7 +401,7 @@ class Manager(object):
         self._engine_config_builder = self.config_builder.engine_config_builder_from_dict(processing_graph,
                                                                                           config.Engine.REQUIREMENTS)
         engine_config = self._engine_config_builder.to_engine_config()
-
+        app_log.debug("Setting processing graph to:\n%s" % engine_config)
         client = httpclient.AsyncHTTPClient()
 
         uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.CONFIG)
