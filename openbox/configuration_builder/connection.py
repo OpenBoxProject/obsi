@@ -56,3 +56,45 @@ class Connection(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
+class MultiConnection(object):
+    """
+    Multiple connections between two elements where the amount of connections
+    is based on the size of some field of the input
+    """
+    def __init__(self, src, dst, based_on):
+        self.src = src
+        self.dst = dst
+        self.based_on = based_on
+
+    @classmethod
+    def from_dict(cls, config):
+        src = config.get("src")
+        if src is None:
+            raise ConnectionConfigurationError("Connection has no 'src' element in configuration")
+        dst = config.get("dst")
+        if dst is None:
+            raise ConnectionConfigurationError("Connection has no 'dst' element in configuration")
+        based_on = config.get('based_on')
+        if based_on is None:
+            raise ConnectionConfigurationError("Connection has no 'based_on' element in configuration")
+
+        return cls(src, dst, based_on)
+
+    def to_dict(self):
+        return dict(src=self.src, dst=self.dst, based_on=self.based_on)
+
+    def to_connections(self, element):
+        try:
+            field = getattr(element, self.based_on)
+        except AttributeError:
+            raise ConnectionConfigurationError("Element {element} has no field named {name}".format(element=element.name,
+                                                                                                    name=self.based_on))
+        if not isinstance(field, (tuple, list)):
+            raise ConnectionConfigurationError("Field {name} need to be a list/tuple not {type}".format(name=self.based_on,
+                                                                                                        type=type(field)))
+        connections = []
+        for i in xrange(len(field)):
+            connections.append(Connection(self.src, self.dst, i, i))
+
+        return connections

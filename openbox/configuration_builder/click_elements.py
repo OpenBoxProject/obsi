@@ -74,8 +74,6 @@ class ListArguments(Argument):
 
     def from_dict(self, config, default=None):
         value = config.get(self.name, default or [])
-        if not isinstance(value, list):
-            raise ClickElementConfigurationError("Argument must be a list")
         return value
 
     def to_click_argument(self, value):

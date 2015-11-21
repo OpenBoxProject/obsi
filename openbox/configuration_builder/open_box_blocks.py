@@ -235,7 +235,7 @@ Discard = build_open_box_block('Discard',
                                    HandlerField('count', FieldType.INTEGER),
                                    HandlerField('byte_count', FieldType.INTEGER),
                                    HandlerField('rate', FieldType.NUMBER),
-                                   HandlerField('byte_rate', FieldType.INTEGER),
+                                   HandlerField('byte_rate', FieldType.NUMBER),
                                    HandlerField('drops', FieldType.STRING),
                                ],
                                write_handlers=[
@@ -280,5 +280,12 @@ ContentClassifier = build_open_box_block('ContentClassifier',
                                          config_fields=[
                                              ConfigField('pattern', True, FieldType.ARRAY)
                                          ],
-                                         read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
-                                         write_handlers=['reset_counts'])
+                                         read_handlers=[
+                                             HandlerField('count', FieldType.INTEGER),
+                                             HandlerField('byte_count', FieldType.INTEGER),
+                                             HandlerField('rate', FieldType.NUMBER),
+                                             HandlerField('byte_rate', FieldType.NUMBER),
+                                             ],
+                                         write_handlers=[
+                                             HandlerField('reset_count', FieldType.NULL)
+                                         ])

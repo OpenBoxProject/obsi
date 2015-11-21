@@ -6,7 +6,7 @@ import sys
 from configuration_builder_exceptions import ClickBlockConfigurationError
 import transformations
 from click_elements import Element, ClickElementConfigurationError
-from connection import Connection
+from connection import Connection, MultiConnection
 from configuration_builder.configuration_builder_exceptions import ConnectionConfigurationError
 from open_box_blocks import OpenBoxBlock
 
@@ -28,6 +28,7 @@ class ClickBlock(object):
     __config_mapping__ = {}
     __elements__ = ()
     __connections__ = ()
+    __multi_connections__ = ()
     __input__ = None
     __output__ = None
     __read_mapping__ = {}
@@ -93,13 +94,35 @@ class ClickBlock(object):
             if isinstance(connection, dict):
                 connection = Connection.from_dict(connection)
             connections.append(self._translate_connection(connection))
-
+        connections.extend(self._connections_from_multi_connections())
+            
         return connections
 
     def _translate_connection(self, connection):
         src_element = self._to_external_element_name(connection.src)
         dst_element = self._to_external_element_name(connection.dst)
         return Connection(src_element, dst_element, connection.src_port, connection.dst_port)
+
+    def _translate_multi_connection(self, multi_connection):
+        src = self._to_external_element_name(multi_connection.src)
+        dst = self._to_external_element_name(multi_connection.dst)
+        based_on = multi_connection.based_on
+        new_multi_connection = MultiConnection(src, dst, based_on)
+        return new_multi_connection
+
+    def _connections_from_multi_connections(self):
+        connections = []
+        elements_by_names = self._elements_by_names()
+        for multi_connection in self.__multi_connections__:
+            if isinstance(multi_connection, dict):
+                multi_connection = MultiConnection.from_dict(multi_connection)
+            new_multi_connection = self._translate_multi_connection(multi_connection)
+            connections.extend(new_multi_connection.to_connections(elements_by_names[new_multi_connection.src]))
+
+        return connections
+
+    def _elements_by_names(self):
+        return dict((element.name, element) for element in self.elements())
 
     def input_element_and_port(self, port):
         if self.__input__ is None:
@@ -151,33 +174,44 @@ class ClickBlock(object):
         return self._to_external_element_name(local_element), local_handler_name, transform_function
 
 
-def build_click_block(name, config_mapping=None, elements=None, connections=None, input=None, output=None,
-                      read_mapping=None, write_mapping=None):
+def build_click_block(name, config_mapping=None, elements=None, connections=None, multi_connections=None,
+                      input=None, output=None, read_mapping=None, write_mapping=None):
     if name not in OpenBoxBlock.blocks_registry:
         raise ValueError("Unknown OpenBoxBlock {name} named".format(name=name))
 
     config_mapping = config_mapping or {}
     elements = elements or ()
     connections = connections or ()
+    multi_connections = multi_connections or ()
     read_mapping = read_mapping or {}
     write_mapping = write_mapping or {}
 
     config_mapping = _update_config_mapping(config_mapping)
-    element_names = _get_element_names(elements)
-    _verify_connections(connections, element_names)
+    elements_by_names = _get_elements_by_names(elements)
+    _verify_connections(connections, elements_by_names)
+    _verify_multi_connection(multi_connections, elements_by_names)
 
     # verify input/output mapping
+    if input and isinstance(input, str) and input not in elements_by_names:
+        raise ValueError("Input is not a declares element")
     if input and not isinstance(input, (str, dict)):
         raise TypeError("Input is of the wrong type {type}".format(type=type(input)))
 
+    if output and isinstance(output, str) and output not in elements_by_names:
+        raise ValueError("Output is not a declares element")
     if output and not isinstance(output, (str, dict)):
         raise TypeError("Output is of the wrong type {type}".format(type=type(output)))
 
-    read_mapping = _update_handler_mapping(element_names, read_mapping, 'read')
-    write_mapping = _update_handler_mapping(element_names, write_mapping, 'write')
+    read_mapping = _update_handler_mapping(elements_by_names, read_mapping, 'read')
+    write_mapping = _update_handler_mapping(elements_by_names, write_mapping, 'write')
 
-    args = dict(__config_mapping__=config_mapping, __elements__=elements, __connections__=connections,
-                __input__=input, __output__=output, __read_mapping__=read_mapping, __write_mapping__=write_mapping)
+    args = dict(__config_mapping__=config_mapping,
+                __elements__=elements,
+                __connections__=connections,
+                __multi_connections__=multi_connections,
+                __input__=input, __output__=output,
+                __read_mapping__=read_mapping,
+                __write_mapping__=write_mapping)
 
     return ClickBlockMeta(name, (ClickBlock,), args)
 
@@ -211,19 +245,19 @@ def _update_config_mapping(config_mapping):
     return updated_config_mapping
 
 
-def _get_element_names(elements):
-    element_names = set()
+def _get_elements_by_names(elements):
+    elements_by_names = {}
     for element in elements:
         try:
             parsed_element = Element.from_dict(element)
-            element_names.add(parsed_element.name)
+            elements_by_names[parsed_element.name] = parsed_element
         except ClickElementConfigurationError:
-            raise ValueError('Illegal element configuration {config}'.format(config=element))
+            raise ValueError('Illegal element configuration {config}'.format(config=element)), None, sys.exc_info()[2]
 
-    return element_names
+    return elements_by_names
 
 
-def _verify_connections(connections, element_names):
+def _verify_connections(connections, elements_by_names):
     # verify connections
     for connection in connections:
         try:
@@ -234,14 +268,38 @@ def _verify_connections(connections, element_names):
             else:
                 raise TypeError(
                     "Connection must be of type dict or Connection and not {type}".format(type=type(connection)))
-            if parsed_connection.src not in element_names:
+            if parsed_connection.src not in elements_by_names:
                 raise ValueError(
                     'Undefined src {name} in connection'.format(name=parsed_connection.src))
-            if parsed_connection.dst not in element_names:
+            if parsed_connection.dst not in elements_by_names:
                 raise ValueError('Undefined dst {name} in connection'.format(name=parsed_connection.dst))
 
         except ConnectionConfigurationError:
             raise ValueError('Illegal connection configuration: {config}'.format(config=connection))
+
+
+def _verify_multi_connection(multi_connections, elements_by_names):
+    for multi_connection in multi_connections:
+        try:
+            if isinstance(multi_connection, dict):
+                parsed_connection = MultiConnection.from_dict(multi_connection)
+            elif isinstance(multi_connection, Connection):
+                parsed_connection = multi_connection
+            else:
+                raise TypeError(
+                    "Connection must be of type dict or Connection and not {type}".format(type=type(multi_connection)))
+            if parsed_connection.src not in elements_by_names:
+                raise ValueError(
+                    'Undefined src {name} in connection'.format(name=parsed_connection.src))
+            if parsed_connection.dst not in elements_by_names:
+                raise ValueError('Undefined dst {name} in connection'.format(name=parsed_connection.dst))
+
+            if parsed_connection.based_on != elements_by_names[parsed_connection.src].__list_arguments__.name:
+                raise ValueError(
+                    'Based on field {field} is not a list field of {element}'.format(field=parsed_connection.based_on,
+                                                                                     element=parsed_connection.src))
+        except ConnectionConfigurationError:
+            raise ValueError('Illegal multi connection configuration: {config}'.format(config=multi_connection))
 
 
 def _update_handler_mapping(element_names, mapping, handler_type):
@@ -367,3 +425,15 @@ Alert = build_click_block('Alert',
                           ],
                           input='push_message',
                           output='push_message')
+
+ContentClassifier = build_click_block('ContentClassifier',
+                                      config_mapping=dict(pattern=_no_transform('pattern')),
+                                      elements=[
+                                          dict(name='classifier', type='Classifier', config=dict(pattern='$pattern')),
+                                          dict(name='counter', type='MultiCounter', config={})
+                                      ],
+                                      multi_connections=[
+                                          dict(src='classifier', dst='counter', based_on='pattern')
+                                      ],
+                                      input='classifier',
+                                      output='counter')
