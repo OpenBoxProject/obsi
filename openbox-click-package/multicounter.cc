@@ -161,7 +161,6 @@ MultiCounter::add_handlers()
     add_read_handler("byte_count", read_handler, H_BYTE_COUNT);
     add_read_handler("rate", read_handler, H_RATE);
     add_read_handler("byte_rate", read_handler, H_BYTE_RATE);
-    add_write_handler("reset", write_handler, H_RESET, Handler::f_button);
     add_write_handler("reset_counts", write_handler, H_RESET, Handler::f_button);
 }
 
