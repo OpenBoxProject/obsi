@@ -345,3 +345,7 @@ PushMessage = build_element('PushMessage',
                             ],
                             read_handlers=[],
                             write_handlers=[])
+
+MultiCounter = build_element('MultiCounter',
+                             read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
+                             write_handlers=['reset_counts'])
