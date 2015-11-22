@@ -347,3 +347,9 @@ PushMessage = build_element('PushMessage',
 MultiCounter = build_element('MultiCounter',
                              read_handlers=['count', 'byte_count', 'rate', 'byte_rate'],
                              write_handlers=['reset_counts'])
+
+IPClassifier = build_element('IPClassifier',
+                             list_argument=ListArguments('pattern'),
+                             read_handlers=['program', 'pattern$i'],
+                             write_handlers=['pattern$i']
+                             )

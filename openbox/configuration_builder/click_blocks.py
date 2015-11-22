@@ -2,12 +2,11 @@ import functools
 import re
 import json
 import sys
-
-from configuration_builder_exceptions import ClickBlockConfigurationError
 import transformations
+from matching_fields import IntMatchField, Ipv4MatchField, BitsIntMatchField, MacMatchField
+from configuration_builder_exceptions import ClickBlockConfigurationError, ConnectionConfigurationError
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection, MultiConnection
-from configuration_builder.configuration_builder_exceptions import ConnectionConfigurationError
 from open_box_blocks import OpenBoxBlock
 
 
@@ -39,11 +38,11 @@ class ClickBlock(object):
     MULTIPLE_HANDLER_RE = re.compile(r'(?P<base>.*)\$(?P<num>\d+)')
 
     def __init__(self, open_box_block):
-        self.block = open_box_block
+        self._block = open_box_block
 
     @property
     def name(self):
-        return self.block.name
+        return self._block.name
 
     @classmethod
     def from_open_box_block(cls, open_box_block):
@@ -60,7 +59,7 @@ class ClickBlock(object):
                 elements.append(self._create_element_instance(element_config))
             except (ClickElementConfigurationError, KeyError) as e:
                 raise ClickBlockConfigurationError(
-                    "Unable to build click configuration for block {name}".format(name=self.block.name)), None, \
+                    "Unable to build click configuration for block {name}".format(name=self._block.name)), None, \
                     sys.exc_info()[2]
         return elements
 
@@ -82,11 +81,11 @@ class ClickBlock(object):
 
     def _transform_config_field(self, variable_name):
         fields, transform_function = self.__config_mapping__[variable_name]
-        field_values = [getattr(self.block, field_name, None) for field_name in fields]
+        field_values = [getattr(self._block, field_name, None) for field_name in fields]
         return transform_function(*field_values)
 
     def _to_external_element_name(self, element):
-        return self.ELEMENT_NAME_PATTERN.format(block=self.block.name, element=element)
+        return self.ELEMENT_NAME_PATTERN.format(block=self._block.name, element=element)
 
     def connections(self):
         connections = []
@@ -95,7 +94,7 @@ class ClickBlock(object):
                 connection = Connection.from_dict(connection)
             connections.append(self._translate_connection(connection))
         connections.extend(self._connections_from_multi_connections())
-            
+
         return connections
 
     def _translate_connection(self, connection):
@@ -436,4 +435,120 @@ ContentClassifier = build_click_block('ContentClassifier',
                                           dict(src='classifier', dst='counter', based_on='pattern')
                                       ],
                                       input='classifier',
-                                      output='counter')
+                                      output='counter',
+                                      read_mapping=dict(
+                                          count=('counter', 'count', 'identity'),
+                                          byte_count=('counter', 'byte_count', 'identity'),
+                                          rate=('counter', 'rate', 'identity'),
+                                          byte_rate=('counter', 'byte_rate', 'identity'),
+                                      ),
+                                      write_mapping=dict(
+                                          reset_counts=('counter', 'reset_counts', 'identity'),
+                                      ))
+
+
+class HeaderClassifier(ClickBlock):
+    """
+    This is a hand made ClickBlock for HeaderClassifier OpenBox Block
+    """
+    __config_mapping__ = {}
+
+    # Fake attributes used by other API functions
+    __elements__ = (dict(name='counter', type='MultiCounter', config={}),
+                    dict(name='classifier', type='Classifier', config=dict(pattern=[])))
+    __input__ = 'classifier'
+    __output__ = 'counter'
+    __read_mapping__ = dict(
+        count=('counter', 'count', 'identity'),
+        byte_count=('counter', 'byte_count', transformations.identity),
+        rate=('counter', 'rate', 'identity'),
+        byte_rate=('counter', 'byte_rate', transformations.identity),
+    )
+    __write_mapping__ = dict(reset_counts=('counter', 'reset_counts', 'identity'))
+
+    def __init__(self, open_box_block):
+        super(HeaderClassifier, self).__init__(open_box_block)
+        self._elements = []
+        self._connections = []
+
+    def elements(self):
+        if not self._elements:
+            self._compile_block()
+        return self._elements
+
+    def connections(self):
+        if not self._connections:
+            self._compile_block()
+        return self._connections
+
+    def _compile_block(self):
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name('counter'),
+                                                     type='MultiCounter', config={})))
+        patterns, rule_numbers = self._compile_match_patterns()
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name('classifier'),
+                                                     type='Classifier', config=dict(pattern=patterns))))
+        for i, rule_number in enumerate(rule_numbers):
+            self._connections.append(Connection(self._to_external_element_name('classifier'),
+                                                self._to_external_element_name('counter'), i, rule_number))
+
+    def _compile_match_patterns(self):
+        patterns = []
+        rule_numbers = []
+        for i, match in enumerate(self._block.match):
+            for pattern in self._compile_match_pattern(match):
+                patterns.append(pattern)
+                rule_numbers.append(i)
+        return patterns, rule_numbers
+
+    def _compile_match_pattern(self, match):
+        patterns = []
+        cluases = []
+        if 'ETH_SRC' in match:
+            cluases.append(MacMatchField(match['ETH_SRC']).to_classifier_clause(0))
+        if 'ETH_DST' in match:
+            cluases.append(MacMatchField(match['ETH_DST']).to_classifier_clause(6))
+        if 'VLAN_VID' in match or 'VLAN_PCP' in match:
+            cluases.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+            if 'VLAN_VID' in match:
+                cluases.append(BitsIntMatchField(match['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
+            if 'VLAN_PCP' in match:
+                cluases.append(BitsIntMatchField(match['VLAN_PCP'], bytes=1, bits=3, shift=5).to_classifier_clause(14))
+            return self._compile_above_eth_type(match, cluases[:], 16)
+        else:
+            patterns.extend(self._compile_above_eth_type(match, cluases[:], 12))
+            cluases_with_vlan = cluases[:]
+            cluases_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+            patterns.extend(self._compile_above_eth_type(match, cluases_with_vlan[:], 16))
+
+        return patterns
+
+    def _compile_above_eth_type(self, match, cluases, eth_type_offset):
+        ip_offset = eth_type_offset + 2
+        if 'ETH_TYPE' in match:
+            cluases.append(IntMatchField(match['ETH_TYPE'], 2).to_classifier_clause(eth_type_offset))
+        if 'IPV4_PROTO' in match:
+            cluases.append(IntMatchField(match['IPV4_PROTO'], 1).to_classifier_clause(ip_offset + 9))
+        if 'IPV4_SRC' in match:
+            cluases.append(Ipv4MatchField(match['IPV4_SRC']).to_classifier_clause(ip_offset + 12))
+        if 'IPV4_DST' in match:
+            cluases.append(Ipv4MatchField(match['IPV4_DST']).to_classifier_clause(ip_offset + 16))
+
+        # currently we don't support IP options
+        if 'TCP_SRC' in match or 'TCP_DST' in match or 'UDP_SRC' in match or 'UDP_DST' in match:
+            cluases.append(BitsIntMatchField(str(5), bytes=1, bits=4).to_classifier_clause(ip_offset))
+
+        payload_offset = ip_offset + 20
+
+        if 'TCP_SRC' in match:
+            cluases.append(IntMatchField(match['TCP_SRC'], 2).to_classifier_clause(payload_offset))
+        if 'TCP_DST' in match:
+            cluases.append(IntMatchField(match['TCP_DST'], 2).to_classifier_clause(payload_offset + 2))
+        if 'UDP_SRC' in match:
+            cluases.append(IntMatchField(match['UDP_SRC'], 2).to_classifier_clause(payload_offset))
+        if 'UDP_DST' in match:
+            cluases.append(IntMatchField(match['UDP_DST'], 2).to_classifier_clause(payload_offset + 2))
+
+        if cluases:
+            return [' '.join(cluases)]
+        else:
+            return ['-']

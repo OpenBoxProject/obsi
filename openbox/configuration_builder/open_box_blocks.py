@@ -1,6 +1,6 @@
-from collections import OrderedDict
 import json
-
+import capabilities
+from collections import OrderedDict
 from configuration_builder_exceptions import OpenBoxBlockConfigurationError
 
 
@@ -12,9 +12,12 @@ class FieldType:
     NULL = 'null'
     OBJECT = 'object'
     STRING = 'string'
+    MATCH_PATTERNS = 'match_patterns'
 
 
 class ConfigField(object):
+    _SUPPORTED_MATCH_FIELDS = set(capabilities.SUPPORTED_MATCH_FIELDS)
+
     def __init__(self, name, required, type, description=None):
         self.name = name
         self.required = required
@@ -36,6 +39,12 @@ class ConfigField(object):
             return isinstance(value, basestring)
         elif self.type == FieldType.OBJECT:
             return isinstance(value, dict)
+        elif self.type == FieldType.MATCH_PATTERNS:
+            return (isinstance(value, (tuple, list)) and
+                    all(self._is_valid_match_pattern(pattern) for pattern in value))
+
+    def _is_valid_match_pattern(self, pattern):
+        return isinstance(pattern, dict) and all(field in self._SUPPORTED_MATCH_FIELDS for field in pattern)
 
     def to_dict(self):
         result = OrderedDict()
@@ -87,9 +96,8 @@ class OpenBoxBlock(object):
             try:
                 value = kwargs[field.name]
                 if not field.validate_value_type(value):
-                    raise TypeError("Field {field} must be of type {rtype} and not {wtype}".format(field=field.name,
-                                                                                                   rtype=field.type,
-                                                                                                   wtype=type(value)))
+                    raise TypeError("Field {field} is not a valid {rtype}".format(field=field.name,
+                                                                                  rtype=field.type))
                 setattr(self, field.name, value)
             except KeyError:
                 if field.required:
@@ -285,7 +293,21 @@ ContentClassifier = build_open_box_block('ContentClassifier',
                                              HandlerField('byte_count', FieldType.INTEGER),
                                              HandlerField('rate', FieldType.NUMBER),
                                              HandlerField('byte_rate', FieldType.NUMBER),
-                                             ],
+                                         ],
                                          write_handlers=[
                                              HandlerField('reset_count', FieldType.NULL)
                                          ])
+
+HeaderClassifier = build_open_box_block('HeaderClassifier',
+                                        config_fields=[
+                                            ConfigField('match', True, FieldType.MATCH_PATTERNS)
+                                        ],
+                                        read_handlers=[
+                                            HandlerField('count', FieldType.INTEGER),
+                                            HandlerField('byte_count', FieldType.INTEGER),
+                                            HandlerField('rate', FieldType.NUMBER),
+                                            HandlerField('byte_rate', FieldType.NUMBER),
+                                        ],
+                                        write_handlers=[
+                                            HandlerField('reset_count', FieldType.NULL)
+                                        ])
