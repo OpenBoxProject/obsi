@@ -316,6 +316,8 @@ Discard = build_element('Discard',
                         read_handlers=['count', 'active'],
                         write_handlers=['reset_counts'])
 
+AutoMarkIPHeader = build_element('AutoMarkIPHeader')
+
 ToDump = build_element('ToDump',
                        mandatory_positional=[
                            MandatoryPositionalArgument('filename')

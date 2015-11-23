@@ -343,10 +343,12 @@ FromDevice = build_click_block('FromDevice',
                                elements=[
                                    dict(name='from_device', type='FromDevice',
                                         config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc')),
+                                   dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                    dict(name='counter', type='Counter', config={})
                                ],
                                connections=[
-                                   dict(src='from_device', dst='counter', src_port=0, dst_port=0),
+                                   dict(src='from_device', dst='mark_ip_header', src_port=0, dst_port=0),
+                                   dict(src='mark_ip_header', dst='counter', src_port=0, dst_port=0),
                                ],
                                output='counter',
                                read_mapping=dict(count=('counter', 'count', 'to_int'),
@@ -363,10 +365,12 @@ FromDump = build_click_block('FromDump',
                              elements=[
                                  dict(name='from_dump', type='FromDump',
                                       config=dict(filename='$filename', timing='$timing', active='$active')),
+                                 dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                  dict(name='counter', type='Counter', config={})
                              ],
                              connections=[
-                                 dict(src='from_dump', dst='counter', src_port=0, dst_port=0),
+                                 dict(src='from_dump', dst='mark_ip_header', src_port=0, dst_port=0),
+                                 dict(src='mark_ip_header', dst='counter', src_port=0, dst_port=0),
                              ],
                              output='counter',
                              read_mapping=dict(
