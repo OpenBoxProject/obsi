@@ -1,6 +1,7 @@
+import errors
+import sys
 from tornado import gen
 from tornado.queues import Queue
-import errors
 from messages import MessageMeta, Message, Error
 
 
@@ -33,10 +34,13 @@ class MessageRouter(object):
                 if handler:
                     yield handler(message)
             except Exception as e:
-                error_type, error_subtype, error_message, extended_message = errors.exception_to_error_args(e)
-                error_message = Error.from_request(message, error_type=error_type, error_subtype=error_subtype,
-                                                   message=error_message, extended_message=extended_message)
-                yield self.message_sender.send_message_ignore_response(error_message)
+                exc_type, exc_value, exc_tb = sys.exc_info()
+                error_type, error_subtype, error_message, extended_message = errors.exception_to_error_args(exc_type,
+                                                                                                            exc_value,
+                                                                                                            exc_tb)
+                response = Error.from_request(message, error_type=error_type, error_subtype=error_subtype,
+                                              message=error_message, extended_message=extended_message)
+                yield self.message_sender.send_message_ignore_response(response)
             finally:
                 self._queue.task_done()
 

@@ -1,13 +1,12 @@
 """
 Send messages to OBC
 """
+import config
 import socket
 
 from tornado import gen
 from tornado.queues import Queue
 from tornado.httpclient import AsyncHTTPClient, HTTPError
-
-import config
 
 
 class MessageSender(object):
@@ -16,21 +15,23 @@ class MessageSender(object):
         self._client = AsyncHTTPClient()
 
     @gen.coroutine
-    def send_message(self, message):
-        yield self._client.fetch(
-            config.OpenBoxController.MESSAGE_ENDPOINT_PATTERN.format(message=message.type),
-            method='POST',
-            user_agent='OBSI',
-            headers={'Content-Type': 'application/json'},
-            body=message.to_json())
+    def send_message(self, message, url=None):
+        url = url or config.OpenBoxController.MESSAGE_ENDPOINT_PATTERN.format(message=message.type)
+        yield self._client.fetch(url, method='POST', user_agent='OBSI', headers={'Content-Type': 'application/json'},
+                                 body=message.to_json())
 
     @gen.coroutine
-    def send_message_ignore_response(self, message):
+    def send_message_ignore_response(self, message, url=None):
         try:
-            response = yield self.send_message(message)
+            response = yield self.send_message(message, url)
             raise gen.Return(True)
         except HTTPError:
             raise gen.Return(False)
         except socket.error:
             raise gen.Return(False)
+
+    @gen.coroutine
+    def send_push_messages(self, push_message_class, dpid, url, buffered_messages):
+        message = push_message_class(origin_dpid=dpid, messages=buffered_messages)
+        yield self.send_message_ignore_response(message, url)
 
