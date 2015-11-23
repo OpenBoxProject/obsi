@@ -506,53 +506,53 @@ class HeaderClassifier(ClickBlock):
 
     def _compile_match_pattern(self, match):
         patterns = []
-        cluases = []
+        clauses = []
         if 'ETH_SRC' in match:
-            cluases.append(MacMatchField(match['ETH_SRC']).to_classifier_clause(0))
+            clauses.append(MacMatchField(match['ETH_SRC']).to_classifier_clause(0))
         if 'ETH_DST' in match:
-            cluases.append(MacMatchField(match['ETH_DST']).to_classifier_clause(6))
+            clauses.append(MacMatchField(match['ETH_DST']).to_classifier_clause(6))
         if 'VLAN_VID' in match or 'VLAN_PCP' in match:
-            cluases.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+            clauses.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
             if 'VLAN_VID' in match:
-                cluases.append(BitsIntMatchField(match['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
+                clauses.append(BitsIntMatchField(match['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
             if 'VLAN_PCP' in match:
-                cluases.append(BitsIntMatchField(match['VLAN_PCP'], bytes=1, bits=3, shift=5).to_classifier_clause(14))
-            return self._compile_above_eth_type(match, cluases[:], 16)
+                clauses.append(BitsIntMatchField(match['VLAN_PCP'], bytes=1, bits=3, shift=5).to_classifier_clause(14))
+            return self._compile_above_eth_type(match, clauses[:], 16)
         else:
-            patterns.extend(self._compile_above_eth_type(match, cluases[:], 12))
-            cluases_with_vlan = cluases[:]
-            cluases_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            patterns.extend(self._compile_above_eth_type(match, cluases_with_vlan[:], 16))
+            patterns.extend(self._compile_above_eth_type(match, clauses[:], 12))
+            clauses_with_vlan = clauses[:]
+            clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+            patterns.extend(self._compile_above_eth_type(match, clauses_with_vlan[:], 16))
 
         return patterns
 
-    def _compile_above_eth_type(self, match, cluases, eth_type_offset):
+    def _compile_above_eth_type(self, match, clauses, eth_type_offset):
         ip_offset = eth_type_offset + 2
         if 'ETH_TYPE' in match:
-            cluases.append(IntMatchField(match['ETH_TYPE'], 2).to_classifier_clause(eth_type_offset))
+            clauses.append(IntMatchField(match['ETH_TYPE'], 2).to_classifier_clause(eth_type_offset))
         if 'IPV4_PROTO' in match:
-            cluases.append(IntMatchField(match['IPV4_PROTO'], 1).to_classifier_clause(ip_offset + 9))
+            clauses.append(IntMatchField(match['IPV4_PROTO'], 1).to_classifier_clause(ip_offset + 9))
         if 'IPV4_SRC' in match:
-            cluases.append(Ipv4MatchField(match['IPV4_SRC']).to_classifier_clause(ip_offset + 12))
+            clauses.append(Ipv4MatchField(match['IPV4_SRC']).to_classifier_clause(ip_offset + 12))
         if 'IPV4_DST' in match:
-            cluases.append(Ipv4MatchField(match['IPV4_DST']).to_classifier_clause(ip_offset + 16))
+            clauses.append(Ipv4MatchField(match['IPV4_DST']).to_classifier_clause(ip_offset + 16))
 
         # currently we don't support IP options
         if 'TCP_SRC' in match or 'TCP_DST' in match or 'UDP_SRC' in match or 'UDP_DST' in match:
-            cluases.append(BitsIntMatchField(str(5), bytes=1, bits=4).to_classifier_clause(ip_offset))
+            clauses.append(BitsIntMatchField(str(5), bytes=1, bits=4).to_classifier_clause(ip_offset))
 
         payload_offset = ip_offset + 20
 
         if 'TCP_SRC' in match:
-            cluases.append(IntMatchField(match['TCP_SRC'], 2).to_classifier_clause(payload_offset))
+            clauses.append(IntMatchField(match['TCP_SRC'], 2).to_classifier_clause(payload_offset))
         if 'TCP_DST' in match:
-            cluases.append(IntMatchField(match['TCP_DST'], 2).to_classifier_clause(payload_offset + 2))
+            clauses.append(IntMatchField(match['TCP_DST'], 2).to_classifier_clause(payload_offset + 2))
         if 'UDP_SRC' in match:
-            cluases.append(IntMatchField(match['UDP_SRC'], 2).to_classifier_clause(payload_offset))
+            clauses.append(IntMatchField(match['UDP_SRC'], 2).to_classifier_clause(payload_offset))
         if 'UDP_DST' in match:
-            cluases.append(IntMatchField(match['UDP_DST'], 2).to_classifier_clause(payload_offset + 2))
+            clauses.append(IntMatchField(match['UDP_DST'], 2).to_classifier_clause(payload_offset + 2))
 
-        if cluases:
-            return [' '.join(cluases)]
+        if clauses:
+            return [' '.join(clauses)]
         else:
             return ['-']
