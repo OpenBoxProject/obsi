@@ -1,9 +1,14 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
 """
 Build an execution engine configuration from an open box configuration
 """
 from open_box_blocks import OpenBoxBlock
 from open_box_configuration import OpenBoxConfiguration
-
 
 class ConfigurationBuilder(object):
     def __init__(self, engine_configuration_builder):
