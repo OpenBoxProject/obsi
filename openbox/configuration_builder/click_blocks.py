@@ -677,3 +677,45 @@ DecIpTtl = build_click_block('DecIpTtl',
                                  reset_counts=('counter', 'reset_counts', 'identity'),
                                  active=('dec_ip_ttl', 'active', 'to_lower'),
                              ))
+
+Ipv4AddressTranslator = build_click_block('Ipv4AddressTranslator',
+                                          config_mapping=dict(
+                                              input_spec=_no_transform('input_spec'),
+                                              tcp_timeout=_no_transform('tcp_timeout'),
+                                              tcp_done_timeout=_no_transform('tcp_done_timeout'),
+                                              tcp_nodata_timeout=_no_transform('tcp_nodata_timeout'),
+                                              tcp_guarantee=_no_transform('tcp_guarantee'),
+                                              udp_timeout=_no_transform('udp_timeout'),
+                                              udp_streaming_timeout=_no_transform('udp_streaming_timeout'),
+                                              udp_guarantee=_no_transform('udp_guarantee'),
+                                              reap_interval=_no_transform('reap_interval'),
+                                              mapping_capacity=_no_transform('mapping_capacity')
+                                          ),
+                                          elements=[dict(name='ip_rewriter', type='IPRewriter',
+                                                         config=dict(
+                                                             input_spec='$input_spec',
+                                                             tcp_timeout='$tcp_timeout',
+                                                             tcp_done_timeout='$tcp_done_timeout',
+                                                             tcp_nodata_timeout='$tcp_nodata_timeout',
+                                                             tcp_guarantee='$tcp_guarantee',
+                                                             udp_timeout='$udp_timeout',
+                                                             udp_streaming_timeout='$udp_streaming_timeout',
+                                                             udp_guarantee='$udp_guarantee',
+                                                             reap_interval='$reap_interval',
+                                                             mapping_capacity='$mapping_capacity'
+                                                         ))],
+                                          input='ip_rewriter',
+                                          output='ip_rewriter',
+                                          read_mapping=dict(
+                                              mapping_count=('ip_rewriter', 'nmappings', 'identity'),
+                                              mapping_failures=('ip_rewriter', 'mapping_failures', 'identity'),
+                                              length=('ip_rewriter', 'length', 'identity'),
+                                              capacity=('ip_rewriter', 'capacity', 'identity'),
+                                              tcp_mappings=('ip_rewriter', 'tcp_mappings', 'identity'),
+                                              udp_mappings=('ip_rewriter', 'udp_mappings', 'identity'),
+                                          ),
+                                          write_mapping=dict(
+                                              capacity=('ip_rewriter', 'capacity', 'identity'),
+                                          )
+                                          )
+

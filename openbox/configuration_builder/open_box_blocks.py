@@ -8,6 +8,7 @@
 
 import json
 import capabilities
+import re
 from collections import OrderedDict
 from configuration_builder_exceptions import OpenBoxBlockConfigurationError
 
@@ -21,10 +22,16 @@ class FieldType:
     OBJECT = 'object'
     STRING = 'string'
     MATCH_PATTERNS = 'match_patterns'
+    IPV4_TRANSLATION_RULES = 'ipv4_translator_rules'
 
 
 class ConfigField(object):
     _SUPPORTED_MATCH_FIELDS = set(capabilities.SUPPORTED_MATCH_FIELDS)
+    _TRANSLATION_RULES_REGEX = [re.compile(r'(drop|discard)'),
+                                re.compile(r'pass \d+'),
+                                re.compile(r'keep \d+ \d+'),
+                                re.compile(
+                                    r"pattern ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ \d+ \d+")]
 
     def __init__(self, name, required, type, description=None):
         self.name = name
@@ -50,9 +57,18 @@ class ConfigField(object):
         elif self.type == FieldType.MATCH_PATTERNS:
             return (isinstance(value, (tuple, list)) and
                     all(self._is_valid_match_pattern(pattern) for pattern in value))
+        elif self.type == FieldType.IPV4_TRANSLATION_RULES:
+            return (isinstance(value, (tuple, list)) and
+                    all(self._is_valid_ipv4_translation_rule(input_spec) for input_spec in value))
 
     def _is_valid_match_pattern(self, pattern):
         return isinstance(pattern, dict) and all(field in self._SUPPORTED_MATCH_FIELDS for field in pattern)
+
+    def _is_valid_ipv4_translation_rule(self, rule):
+        for regex in self._TRANSLATION_RULES_REGEX:
+            if regex.match(rule):
+                return True
+        return False
 
     def to_dict(self):
         result = OrderedDict()
@@ -104,12 +120,12 @@ class OpenBoxBlock(object):
             try:
                 value = kwargs[field.name]
                 if not field.validate_value_type(value):
-                    raise TypeError("Field {field} is not a valid {rtype}".format(field=field.name,
-                                                                                  rtype=field.type))
+                    raise TypeError("Field '{field}' is not a valid '{rtype}'".format(field=field.name,
+                                                                                      rtype=field.type))
                 setattr(self, field.name, value)
             except KeyError:
                 if field.required:
-                    raise ValueError("Required field {field} not given".format(field=field.name))
+                    raise ValueError("Required field '{field}' not given".format(field=field.name))
 
     @classmethod
     def from_dict(cls, config):
@@ -363,34 +379,58 @@ VlanEncapsulate = build_open_box_block('VlanEncapsulate',
                                            ConfigField('vlan_dei', False, FieldType.INTEGER),
                                            ConfigField('vlan_pcp', False, FieldType.INTEGER),
                                            ConfigField('ethertype', False, FieldType.INTEGER),
-                                           ],
+                                       ],
                                        read_handlers=[
                                            HandlerField('vlan_vid', FieldType.INTEGER),
                                            HandlerField('vlan_dei', FieldType.INTEGER),
                                            HandlerField('vlan_pcp', FieldType.INTEGER),
                                            HandlerField('vlan_tci', FieldType.INTEGER),
                                            HandlerField('ethertype', FieldType.INTEGER),
-                                           ],
+                                       ],
                                        write_handlers=[
                                            HandlerField('vlan_vid', FieldType.INTEGER),
                                            HandlerField('vlan_dei', FieldType.INTEGER),
                                            HandlerField('vlan_pcp', FieldType.INTEGER),
                                            HandlerField('vlan_tci', FieldType.INTEGER),
                                            HandlerField('ethertype', FieldType.INTEGER),
-                                           ])
+                                       ])
 
 DecIpTtl = build_open_box_block('DecIpTtl',
                                 config_fields=[
                                     ConfigField('active', False, FieldType.BOOLEAN),
-                                    ],
+                                ],
                                 read_handlers=[
                                     HandlerField('count', FieldType.INTEGER),
                                     HandlerField('byte_count', FieldType.INTEGER),
                                     HandlerField('rate', FieldType.NUMBER),
                                     HandlerField('byte_rate', FieldType.NUMBER),
                                     HandlerField('active', FieldType.BOOLEAN),
-                                    ],
+                                ],
                                 write_handlers=[
                                     HandlerField('reset_counts', FieldType.NULL),
                                     HandlerField('active', FieldType.BOOLEAN),
-                                    ])
+                                ])
+
+Ipv4AddressTranslator = build_open_box_block('Ipv4AddressTranslator',
+                                             config_fields=[
+                                                 ConfigField('input_spec', True, FieldType.IPV4_TRANSLATION_RULES),
+                                                 ConfigField('tcp_done_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('tcp_nodata_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('tcp_guarantee', False, FieldType.INTEGER),
+                                                 ConfigField('udp_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('udp_streaming_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('udp_guarantee', False, FieldType.INTEGER),
+                                                 ConfigField('reap_interval', False, FieldType.INTEGER),
+                                                 ConfigField('mapping_capacity', False, FieldType.INTEGER)
+                                             ],
+                                             read_handlers=[
+                                                 HandlerField('mapping_count', FieldType.INTEGER),
+                                                 HandlerField('mapping_failures', FieldType.INTEGER),
+                                                 HandlerField('length', FieldType.INTEGER),
+                                                 HandlerField('capacity', FieldType.INTEGER),
+                                                 HandlerField('tcp_mapping', FieldType.STRING),
+                                                 HandlerField('udp_mapping', FieldType.STRING),
+                                             ],
+                                             write_handlers=[
+                                                 HandlerField('capacity', FieldType.INTEGER)
+                                             ])

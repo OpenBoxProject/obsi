@@ -399,3 +399,22 @@ DecIPTTL = build_element('DecIPTTL',
                          keywords=[KeywordArgument('active'), KeywordArgument('multicast')],
                          read_handlers=['active', 'multicast'],
                          write_handlers=['active', 'multicast'])
+
+IPRewriter = build_element('IPRewriter',
+                           list_argument=ListArguments('input_spec'),
+                           keywords=[
+                               KeywordArgument('tcp_timeout'),
+                               KeywordArgument('tcp_done_timeout'),
+                               KeywordArgument('tcp_nodata_timeout'),
+                               KeywordArgument('tcp_guarantee'),
+                               KeywordArgument('udp_timeout'),
+                               KeywordArgument('udp_streaming_timeout'),
+                               KeywordArgument('udp_guarantee'),
+                               KeywordArgument('reap_interval'),
+                               KeywordArgument('mapping_capacity'),
+                               KeywordArgument('dst_anno'),
+                           ],
+                           read_handlers=['nmappings', 'mapping_failures', 'length', 'capacity', 'tcp_mappings',
+                                          'udp_mappings'],
+                           write_handlers=['capacity']
+                           )
