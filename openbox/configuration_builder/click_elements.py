@@ -394,3 +394,8 @@ VLANEncap = build_element('VLANEncap',
                           read_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
                           write_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
                           )
+
+DecIPTTL = build_element('DecIPTTL',
+                         keywords=[KeywordArgument('active'), KeywordArgument('multicast')],
+                         read_handlers=['active', 'multicast'],
+                         write_handlers=['active', 'multicast'])

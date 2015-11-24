@@ -378,3 +378,19 @@ VlanEncapsulate = build_open_box_block('VlanEncapsulate',
                                            HandlerField('vlan_tci', FieldType.INTEGER),
                                            HandlerField('ethertype', FieldType.INTEGER),
                                            ])
+
+DecIpTtl = build_open_box_block('DecIpTtl',
+                                config_fields=[
+                                    ConfigField('active', False, FieldType.BOOLEAN),
+                                    ],
+                                read_handlers=[
+                                    HandlerField('count', FieldType.INTEGER),
+                                    HandlerField('byte_count', FieldType.INTEGER),
+                                    HandlerField('rate', FieldType.NUMBER),
+                                    HandlerField('byte_rate', FieldType.NUMBER),
+                                    HandlerField('active', FieldType.BOOLEAN),
+                                    ],
+                                write_handlers=[
+                                    HandlerField('reset_counts', FieldType.NULL),
+                                    HandlerField('active', FieldType.BOOLEAN),
+                                    ])

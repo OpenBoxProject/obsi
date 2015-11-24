@@ -652,3 +652,28 @@ VlanEncapsulate = build_click_block('VlanEncapsulate',
                                         ethertype=('vlan_encap', 'ethertype', 'identity'),
                                     )
                                     )
+
+DecIpTtl = build_click_block('DecIpTtl',
+                             config_mapping=dict(active=_no_transform('active')),
+                             elements=[
+                                 dict(name='dec_ip_ttl', type='DecIPTTL',
+                                      config=dict(active='$active')),
+                                 dict(name='counter', type='MultiCounter', config={}),
+                             ],
+                             connections=[
+                                 dict(src='dec_ip_ttl', dst='counter', src_port=0, dst_port=0),
+                                 dict(src='dec_ip_ttl', dst='counter', src_port=1, dst_port=1),
+                             ],
+                             input='dec_ip_ttl',
+                             output='counter',
+                             read_mapping=dict(
+                                 count=('counter', 'count', 'identity'),
+                                 byte_count=('counter', 'byte_count', 'identity'),
+                                 rate=('counter', 'rate', 'identity'),
+                                 byte_rate=('counter', 'byte_rate', 'identity'),
+                                 active=('dec_ip_ttl', 'active', 'identity'),
+                             ),
+                             write_mapping=dict(
+                                 reset_counts=('counter', 'reset_counts', 'identity'),
+                                 active=('dec_ip_ttl', 'active', 'to_lower'),
+                             ))
