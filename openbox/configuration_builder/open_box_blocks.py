@@ -262,10 +262,6 @@ Discard = build_open_box_block('Discard',
 ToDump = build_open_box_block('ToDump',
                               config_fields=[
                                   ConfigField('filename', True, FieldType.STRING),
-                              ],
-                              read_handlers=[
-                              ],
-                              write_handlers=[
                               ])
 
 Log = build_open_box_block('Log',
@@ -358,3 +354,27 @@ RegexClassifier = build_open_box_block('RegexClassifier',
                                            HandlerField('payload_only', FieldType.NUMBER),
                                        ]
                                        )
+
+VlanDecapsulate = build_open_box_block('VlanDecapsulate')
+
+VlanEncapsulate = build_open_box_block('VlanEncapsulate',
+                                       config_fields=[
+                                           ConfigField('vlan_vid', True, FieldType.INTEGER),
+                                           ConfigField('vlan_dei', False, FieldType.INTEGER),
+                                           ConfigField('vlan_pcp', False, FieldType.INTEGER),
+                                           ConfigField('ethertype', False, FieldType.INTEGER),
+                                           ],
+                                       read_handlers=[
+                                           HandlerField('vlan_vid', FieldType.INTEGER),
+                                           HandlerField('vlan_dei', FieldType.INTEGER),
+                                           HandlerField('vlan_pcp', FieldType.INTEGER),
+                                           HandlerField('vlan_tci', FieldType.INTEGER),
+                                           HandlerField('ethertype', FieldType.INTEGER),
+                                           ],
+                                       write_handlers=[
+                                           HandlerField('vlan_vid', FieldType.INTEGER),
+                                           HandlerField('vlan_dei', FieldType.INTEGER),
+                                           HandlerField('vlan_pcp', FieldType.INTEGER),
+                                           HandlerField('vlan_tci', FieldType.INTEGER),
+                                           HandlerField('ethertype', FieldType.INTEGER),
+                                           ])

@@ -32,7 +32,7 @@ class Argument(object):
         """
         if isinstance(value, bool):
             return str(value).lower()
-        return value
+        return str(value)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
@@ -377,3 +377,20 @@ RegexClassifier = build_element("RegexClassifier",
                                 keywords=[KeywordArgument('payload_only')],
                                 read_handlers=['payload_only', 'pattern$i'],
                                 write_handlers=['payload_only', 'pattern$i'])
+
+VLANDecap = build_element('VLANDecap',
+                          keywords=[KeywordArgument('anno')])
+
+VLANEncap = build_element('VLANEncap',
+                          mandatory_positional=[
+                              MandatoryPositionalArgument('vlan_tci'),
+                              MandatoryPositionalArgument('vlan_pcp'),
+                          ],
+                          keywords=[
+                              KeywordArgument('vlan_id'),
+                              KeywordArgument('native_vlan'),
+                              KeywordArgument('ethertype'),
+                          ],
+                          read_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
+                          write_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
+                          )

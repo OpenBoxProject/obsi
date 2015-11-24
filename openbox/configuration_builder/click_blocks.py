@@ -621,3 +621,34 @@ RegexClassifier = build_click_block('RegexClassifier',
                                         payload_only=('regex_classifier', 'payload_only', 'to_lower'),
                                     )
                                     )
+
+VlanDecapsulate = build_click_block('VlanDecapsulate',
+                                    elements=[dict(name='vlan_decap', type='VLANDecap', config={})],
+                                    input='vlan_decap',
+                                    output='vlan_decap',
+                                    )
+
+VlanEncapsulate = build_click_block('VlanEncapsulate',
+                                    config_mapping=dict(
+                                        vlan_tci=(['vlan_vid', 'vlan_dei', 'vlan_pcp'], "to_vlan_tci"),
+                                        vlan_pcp=(['vlan_pcp'], 'to_int'),
+                                        ethertype=_no_transform('ethertype')
+                                    ),
+                                    elements=[dict(name='vlan_encap', type='VLANEncap',
+                                                   config=dict(vlan_tci='$vlan_tci', vlan_pcp='$vlan_pcp',
+                                                               ethertype='$ethertype'))],
+                                    input='vlan_encap',
+                                    output='vlan_encap',
+                                    read_mapping=dict(
+                                        vlan_vid=('vlan_encap', 'vlan_vid', 'identity'),
+                                        vlan_pcp=('vlan_encap', 'vlan_pcp', 'identity'),
+                                        vlan_tci=('vlan_encap', 'vlan_tci', 'identity'),
+                                        ethertype=('vlan_encap', 'ethertype', 'identity'),
+                                    ),
+                                    write_mapping=dict(
+                                        vlan_vid=('vlan_encap', 'vlan_vid', 'identity'),
+                                        vlan_pcp=('vlan_encap', 'vlan_pcp', 'identity'),
+                                        vlan_tci=('vlan_encap', 'vlan_tci', 'identity'),
+                                        ethertype=('vlan_encap', 'ethertype', 'identity'),
+                                    )
+                                    )

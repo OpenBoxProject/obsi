@@ -9,6 +9,8 @@ import json
 
 
 def to_int(value, **kwargs):
+    if value is None:
+        return 0
     return int(value)
 
 
@@ -42,3 +44,11 @@ def to_quoted(value, **kwargs):
         return [_to_quoted_string(elem) for elem in value]
     elif isinstance(value, (str, unicode)):
         return _to_quoted_string(value)
+
+
+def to_vlan_tci(vid, dei, pcp, **kwargs):
+    vid = int(vid)
+    dei = to_int(dei)
+    pcp = to_int(pcp)
+    return (vid | (dei << 12) | (pcp << 13)) & 0xffff
+
