@@ -621,18 +621,3 @@ RegexClassifier = build_click_block('RegexClassifier',
                                         payload_only=('regex_classifier', 'payload_only', 'to_lower'),
                                     )
                                     )
-
-obb = OpenBoxBlock.from_dict(dict(name='asdf', type='RegexClassifier',
-                             config=dict(pattern=['xnt', 'hello', '\d+'], payload_only=False)))
-cb = ClickBlock.from_open_box_block(obb)
-for e in cb.elements():
-    print e.to_click_config()
-for c in cb.connections():
-    print c.to_click_config()
-print cb.input_element_and_port(0)
-print cb.output_element_and_port(0)
-print cb.translate_read_handler('count')
-print cb.translate_read_handler('payload_only')
-print cb.translate_write_handler('reset_counts')
-print cb.translate_write_handler('payload_only')
-

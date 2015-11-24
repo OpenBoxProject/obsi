@@ -10,6 +10,7 @@ Build an execution engine configuration from an open box configuration
 from open_box_blocks import OpenBoxBlock
 from open_box_configuration import OpenBoxConfiguration
 
+
 class ConfigurationBuilder(object):
     def __init__(self, engine_configuration_builder):
         self.engine_builder = engine_configuration_builder
@@ -33,5 +34,8 @@ class ConfigurationBuilder(object):
 
     def supported_protocol_analyser_protocols(self):
         return self.engine_builder.supported_protocol_analyser_protocols()
+
+    def supported_complex_match(self):
+        return self.engine_builder.supported_complex_match()
 
 
