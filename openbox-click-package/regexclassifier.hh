@@ -70,7 +70,10 @@ class RegexClassifier : public Element {
 
   private:
     bool is_valid_patterns(Vector<String> &patterns, ErrorHandler *errh) const;
+    static String read_handler(Element *, void *) CLICK_COLD;
+    static int write_handler(const String&, Element*, void*, ErrorHandler*) CLICK_COLD;
     RegexSet _program;
+    bool _payload_only;
     
 };
 

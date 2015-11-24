@@ -1,5 +1,5 @@
 #include <click/config.h>
-#include "regexclassifier.hh"
+#include "regexmatcher.hh"
 #include <click/glue.hh>
 #include <click/error.hh>
 #include <click/args.hh>
@@ -8,24 +8,26 @@
 
 CLICK_DECLS
 
-RegexClassifier::RegexClassifier() {
+RegexMatcher::RegexMatcher() : _payload_only(false), _match_all(false)
+{
 }
 
-RegexClassifier::~RegexClassifier() {
+RegexMatcher::~RegexMatcher() {
 }
 
-int RegexClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
+int 
+RegexMatcher::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     bool payload_only = false;
+    bool match_all = false;
     if (Args(this, errh).bind(conf)
       .read("PAYLOAD_ONLY", payload_only)
+      .read("MATCH_ALL", match_all)
       .consume() < 0)
       return -1;
     _payload_only = payload_only;
+    _match_all = match_all;
 
-    if (conf.size() != noutputs())
-	   return errh->error("need %d patterns, one per output port", noutputs());
-    
     if (!is_valid_patterns(conf, errh)) {
         return -1;
     }
@@ -56,7 +58,8 @@ int RegexClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
     }
 }
 
-bool RegexClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler *errh) const{
+bool 
+RegexMatcher::is_valid_patterns(Vector<String> &patterns, ErrorHandler *errh) const{
     RegexSet test_set;
     bool valid = true;
     for (int i=0; i < patterns.size(); ++i) {
@@ -75,46 +78,7 @@ bool RegexClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler *
     return valid;
 }
 
-enum { H_PAYLOAD_ONLY};
-
-String
-RegexClassifier::read_handler(Element *e, void *thunk)
-{
-    RegexClassifier *c = (RegexClassifier *)e;
-    switch ((intptr_t)thunk) {
-      case H_PAYLOAD_ONLY:
-          return String(c->_payload_only);
-      default:
-          return "<error>";
-    }
-}
-
-int
-RegexClassifier::write_handler(const String &in_str, Element *e, void *thunk, ErrorHandler *errh)
-{
-    RegexClassifier *c = (RegexClassifier *)e;
-    switch ((intptr_t)thunk) {
-        case H_PAYLOAD_ONLY:
-           if (!BoolArg().parse(in_str, c->_payload_only))
-                return errh->error("syntax error");
-           return 0;
-        default:
-            return errh->error("<internal>");
-    }
-}
-
-void 
-RegexClassifier::add_handlers() {
-    for (uintptr_t i = 0; i != (uintptr_t) noutputs(); ++i) {
-    	add_read_handler("pattern" + String(i), read_positional_handler, (void*) i);
-    	add_write_handler("pattern" + String(i), reconfigure_positional_handler, (void*) i);
-    }
-    add_read_handler("payload_only", read_handler, H_PAYLOAD_ONLY);
-    add_write_handler("payload_only", write_handler, H_PAYLOAD_ONLY);
-}
-
-void 
-RegexClassifier::push(int, Packet* p) {
+void RegexMatcher::push(int, Packet* p) {
     char* data = (char *) p->data();
     int length = p->length();
     if (_payload_only) {
@@ -127,10 +91,70 @@ RegexClassifier::push(int, Packet* p) {
             length = p->transport_length();
         }
     }
-    checked_output_push(_program.match_first(data, length), p);
+
+    if (_match_all) {
+        if (_program.match_all(data, length)) {
+            output(0).push(p);
+        } else {
+            checked_output_push(1, p);
+        }
+    } else {
+        if (_program.match_any(data, length)) {
+            output(0).push(p);
+        } else {
+            checked_output_push(1, p);
+        }
+    }
 }
 
+enum { H_PAYLOAD_ONLY, H_MATCH_ALL};
+
+String
+RegexMatcher::read_handler(Element *e, void *thunk)
+{
+    RegexMatcher *c = (RegexMatcher *)e;
+    switch ((intptr_t)thunk) {
+      case H_PAYLOAD_ONLY:
+          return String(c->_payload_only);
+      case H_MATCH_ALL:
+          return String(c->_match_all);
+      default:
+          return "<error>";
+    }
+}
+
+int
+RegexMatcher::write_handler(const String &in_str, Element *e, void *thunk, ErrorHandler *errh)
+{
+    RegexMatcher *c = (RegexMatcher *)e;
+    switch ((intptr_t)thunk) {
+        case H_PAYLOAD_ONLY:
+           if (!BoolArg().parse(in_str, c->_payload_only))
+                return errh->error("syntax error");
+           return 0;
+        case H_MATCH_ALL:
+            if (!BoolArg().parse(in_str, c->_match_all))
+                return errh->error("syntax error");
+           return 0;
+        default:
+            return errh->error("<internal>");
+    }
+}
+
+void 
+RegexMatcher::add_handlers() {
+    for (uintptr_t i = 0; i != (uintptr_t) noutputs(); ++i) {
+    	add_read_handler("pattern" + String(i), read_positional_handler, (void*) i);
+    	add_write_handler("pattern" + String(i), reconfigure_positional_handler, (void*) i);
+    }
+    add_read_handler("payload_only", read_handler, H_PAYLOAD_ONLY);
+    add_read_handler("match_all", read_handler, H_MATCH_ALL);
+    add_write_handler("payload_only", write_handler, H_PAYLOAD_ONLY);
+    add_write_handler("match_all", write_handler, H_MATCH_ALL);
+}
+
+
 CLICK_ENDDECLS
-EXPORT_ELEMENT(RegexClassifier)
+EXPORT_ELEMENT(RegexMatcher)
 ELEMENT_REQUIRES(userlevel RegexSet)
-ELEMENT_MT_SAFE(RegexClassifier)
+ELEMENT_MT_SAFE(RegexMatcher)
