@@ -434,3 +434,19 @@ Ipv4AddressTranslator = build_open_box_block('Ipv4AddressTranslator',
                                              write_handlers=[
                                                  HandlerField('capacity', FieldType.INTEGER)
                                              ])
+
+Queue = build_open_box_block('Queue',
+                             config_fields=[
+                                 ConfigField('capacity', False, FieldType.INTEGER),
+                             ],
+                             read_handlers=[
+                                 HandlerField('length', FieldType.INTEGER),
+                                 HandlerField('highwater_length', FieldType.INTEGER),
+                                 HandlerField('drops', FieldType.INTEGER),
+                                 HandlerField('capacity', FieldType.INTEGER),
+                                 ],
+                             write_handlers=[
+                                 HandlerField('reset_counts', FieldType.INTEGER),
+                                 HandlerField('reset', FieldType.INTEGER)
+                             ]
+                             )

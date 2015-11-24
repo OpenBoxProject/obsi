@@ -418,3 +418,9 @@ IPRewriter = build_element('IPRewriter',
                                           'udp_mappings'],
                            write_handlers=['capacity']
                            )
+
+Queue = build_element('Queue',
+                      optional_positional=[OptionalPositionalArgument('capacity')],
+                      read_handlers=['length', 'highwater_length', 'capacity', 'drops'],
+                      write_handlers=['reset_counts', 'reset']
+                      )

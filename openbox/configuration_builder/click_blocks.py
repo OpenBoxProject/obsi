@@ -719,3 +719,22 @@ Ipv4AddressTranslator = build_click_block('Ipv4AddressTranslator',
                                           )
                                           )
 
+Queue = build_click_block('Queue',
+                          config_mapping=dict(
+                              capacity=_no_transform('capacity'),
+                          ),
+                          elements=[dict(name='queue', type='Queue', config=dict(capacity='$capacity'))],
+                          input='queue',
+                          output='queue',
+                          read_mapping=dict(
+                              length=('queue', 'length', 'identity'),
+                              highwater_length=('queue', 'highwater_length', 'identity'),
+                              drops=('queue', 'drops', 'identity'),
+                              capacity=('queue', 'capacity', 'identity'),
+
+                          ),
+                          write_mapping=dict(
+                              capacity=('queue', 'reset_counts', 'identity'),
+                              reset=('queue', 'reset', 'identity'),
+                          )
+                          )
