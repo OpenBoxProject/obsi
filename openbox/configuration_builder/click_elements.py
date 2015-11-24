@@ -364,3 +364,9 @@ RegexMatcher = build_element("RegexMatcher",
                              ],
                              read_handlers=['payload_only', 'match_all', 'pattern$i'],
                              write_handlers=['payload_only', 'match_all', 'pattern$i'])
+
+RegexClassifier = build_element("RegexClassifier",
+                                list_argument=ListArguments('pattern'),
+                                keywords=[KeywordArgument('payload_only')],
+                                read_handlers=['payload_only', 'pattern$i'],
+                                write_handlers=['payload_only', 'pattern$i'])

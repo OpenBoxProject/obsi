@@ -557,6 +557,7 @@ class HeaderClassifier(ClickBlock):
         else:
             return ['-']
 
+
 RegexMatcher = build_click_block('RegexMatcher',
                                  config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
                                                      match_all=_no_transform('match_all'),
@@ -587,3 +588,44 @@ RegexMatcher = build_click_block('RegexMatcher',
                                      payload_only=('regex_matcher', 'payload_only', 'to_lower'),
                                  )
                                  )
+
+RegexClassifier = build_click_block('RegexClassifier',
+                                    config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                                        payload_only=_no_transform('payload_only')),
+                                    elements=[
+                                        dict(name='regex_classifier', type='RegexClassifier',
+                                             config=dict(pattern='$pattern', payload_only='$payload_only')),
+                                        dict(name='counter', type='MultiCounter', config={}),
+                                    ],
+                                    multi_connections=[
+                                        dict(src='regex_classifier', dst='counter', based_on='pattern')
+                                    ],
+                                    input='regex_classifier',
+                                    output='counter',
+                                    read_mapping=dict(
+                                        count=('counter', 'count', 'identity'),
+                                        byte_count=('counter', 'byte_count', 'identity'),
+                                        rate=('counter', 'rate', 'identity'),
+                                        byte_rate=('counter', 'byte_rate', 'identity'),
+                                        payload_only=('regex_classifier', 'payload_only', 'identity'),
+                                    ),
+                                    write_mapping=dict(
+                                        reset_counts=('counter', 'reset_counts', 'identity'),
+                                        payload_only=('regex_classifier', 'payload_only', 'to_lower'),
+                                    )
+                                    )
+
+obb = OpenBoxBlock.from_dict(dict(name='asdf', type='RegexClassifier',
+                             config=dict(pattern=['xnt', 'hello', '\d+'], payload_only=False)))
+cb = ClickBlock.from_open_box_block(obb)
+for e in cb.elements():
+    print e.to_click_config()
+for c in cb.connections():
+    print c.to_click_config()
+print cb.input_element_and_port(0)
+print cb.output_element_and_port(0)
+print cb.translate_read_handler('count')
+print cb.translate_read_handler('payload_only')
+print cb.translate_write_handler('reset_counts')
+print cb.translate_write_handler('payload_only')
+

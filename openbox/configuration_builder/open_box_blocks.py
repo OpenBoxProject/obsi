@@ -215,7 +215,7 @@ FromDevice = build_open_box_block('FromDevice',
                                       HandlerField('drops', FieldType.STRING),
                                   ],
                                   write_handlers=[
-                                      HandlerField('reset_count', FieldType.NULL)
+                                      HandlerField('reset_counts', FieldType.NULL)
                                   ])
 
 FromDump = build_open_box_block('FromDump',
@@ -232,7 +232,7 @@ FromDump = build_open_box_block('FromDump',
                                     HandlerField('drops', FieldType.STRING),
                                 ],
                                 write_handlers=[
-                                    HandlerField('reset_count', FieldType.NULL),
+                                    HandlerField('reset_counts', FieldType.NULL),
                                     HandlerField('active', FieldType.BOOLEAN)
                                 ])
 
@@ -247,7 +247,7 @@ Discard = build_open_box_block('Discard',
                                    HandlerField('drops', FieldType.STRING),
                                ],
                                write_handlers=[
-                                   HandlerField('reset_count', FieldType.NULL),
+                                   HandlerField('reset_counts', FieldType.NULL),
                                    HandlerField('active', FieldType.BOOLEAN)
                                ])
 
@@ -295,7 +295,7 @@ ContentClassifier = build_open_box_block('ContentClassifier',
                                              HandlerField('byte_rate', FieldType.NUMBER),
                                          ],
                                          write_handlers=[
-                                             HandlerField('reset_count', FieldType.NULL)
+                                             HandlerField('reset_counts', FieldType.NULL)
                                          ])
 
 HeaderClassifier = build_open_box_block('HeaderClassifier',
@@ -309,7 +309,7 @@ HeaderClassifier = build_open_box_block('HeaderClassifier',
                                             HandlerField('byte_rate', FieldType.NUMBER),
                                         ],
                                         write_handlers=[
-                                            HandlerField('reset_count', FieldType.NULL)
+                                            HandlerField('reset_counts', FieldType.NULL)
                                         ])
 
 RegexMatcher = build_open_box_block('RegexMatcher',
@@ -325,10 +325,28 @@ RegexMatcher = build_open_box_block('RegexMatcher',
                                         HandlerField('byte_rate', FieldType.NUMBER),
                                         HandlerField('payload_only', FieldType.NUMBER),
                                         HandlerField('match_all', FieldType.NUMBER),
-                                        ],
+                                    ],
                                     write_handlers=[
-                                        HandlerField('reset_count', FieldType.NULL),
+                                        HandlerField('reset_counts', FieldType.NULL),
                                         HandlerField('payload_only', FieldType.NUMBER),
                                         HandlerField('match_all', FieldType.NUMBER),
-                                        ]
+                                    ]
                                     )
+
+RegexClassifier = build_open_box_block('RegexClassifier',
+                                       config_fields=[
+                                           ConfigField('pattern', True, FieldType.ARRAY),
+                                           ConfigField('payload_only', False, FieldType.BOOLEAN),
+                                       ],
+                                       read_handlers=[
+                                           HandlerField('count', FieldType.INTEGER),
+                                           HandlerField('byte_count', FieldType.INTEGER),
+                                           HandlerField('rate', FieldType.NUMBER),
+                                           HandlerField('byte_rate', FieldType.NUMBER),
+                                           HandlerField('payload_only', FieldType.NUMBER),
+                                       ],
+                                       write_handlers=[
+                                           HandlerField('reset_counts', FieldType.NULL),
+                                           HandlerField('payload_only', FieldType.NUMBER),
+                                       ]
+                                       )
