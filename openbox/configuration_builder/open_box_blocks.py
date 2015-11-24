@@ -142,7 +142,7 @@ class OpenBoxBlock(object):
         config = dict()
         for field in self.__fields__:
             value = getattr(self, field.name, None)
-            if value:
+            if value is not None:
                 config[field.name] = value
         result['config'] = config
         return result
@@ -311,3 +311,24 @@ HeaderClassifier = build_open_box_block('HeaderClassifier',
                                         write_handlers=[
                                             HandlerField('reset_count', FieldType.NULL)
                                         ])
+
+RegexMatcher = build_open_box_block('RegexMatcher',
+                                    config_fields=[
+                                        ConfigField('pattern', True, FieldType.ARRAY),
+                                        ConfigField('payload_only', False, FieldType.BOOLEAN),
+                                        ConfigField('match_all', False, FieldType.BOOLEAN)
+                                    ],
+                                    read_handlers=[
+                                        HandlerField('count', FieldType.INTEGER),
+                                        HandlerField('byte_count', FieldType.INTEGER),
+                                        HandlerField('rate', FieldType.NUMBER),
+                                        HandlerField('byte_rate', FieldType.NUMBER),
+                                        HandlerField('payload_only', FieldType.NUMBER),
+                                        HandlerField('match_all', FieldType.NUMBER),
+                                        ],
+                                    write_handlers=[
+                                        HandlerField('reset_count', FieldType.NULL),
+                                        HandlerField('payload_only', FieldType.NUMBER),
+                                        HandlerField('match_all', FieldType.NUMBER),
+                                        ]
+                                    )

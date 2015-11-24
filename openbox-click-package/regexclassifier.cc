@@ -75,7 +75,7 @@ void RegexClassifier::add_handlers() {
 }
 
 void RegexClassifier::push(int, Packet* p) {
-    checked_output_push(_program.match_first(p), p);
+    checked_output_push(_program.match_first((char*)p->data(), p->length()), p);
 }
 
 CLICK_ENDDECLS

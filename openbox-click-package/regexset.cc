@@ -4,6 +4,7 @@ CLICK_DECLS
 
 RegexSet::RegexSet() :
 _compiled(false), 
+_npatterns(0),
 _compiled_regex(new re2::RE2::Set(re2::RE2::Options(), re2::RE2::UNANCHORED)) 
 {
 
@@ -21,6 +22,7 @@ int RegexSet::add_pattern(const String& pattern) {
   }
 
   int result = _compiled_regex->Add(re2::StringPiece(pattern.c_str(), pattern.length()), NULL);
+  ++_npatterns; 
   return result;
 }
 
@@ -41,6 +43,7 @@ void RegexSet::reset() {
     _compiled = false;
     delete _compiled_regex;
     _compiled_regex = new re2::RE2::Set(re2::RE2::Options(), re2::RE2::UNANCHORED);
+    _npatterns = 0;
 }
 
 CLICK_ENDDECLS

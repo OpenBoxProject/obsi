@@ -60,7 +60,7 @@ class KeywordArgument(Argument):
     """
 
     def to_click_argument(self, value):
-        if value:
+        if value is not None:
             value = super(KeywordArgument, self).to_click_argument(value)
             return '{name} {value}'.format(name=self.name.upper(), value=value)
         else:
@@ -166,13 +166,13 @@ class Element(object):
                 config_args.append(arg.to_click_argument(arg_value))
             for arg in self.__optional_positional_arguments__:
                 arg_value = getattr(self, arg.name, None)
-                if arg_value:
+                if arg_value is not None:
                     config_args.append(arg.to_click_argument(arg_value))
 
         # keywords argument can always be present
         for arg in self.__keyword_arguments__:
             arg_value = getattr(self, arg.name, None)
-            if arg_value:
+            if arg_value is not None:
                 config_args.append(arg.to_click_argument(arg_value))
 
         args = ', '.join(config_args)
@@ -355,3 +355,12 @@ IPClassifier = build_element('IPClassifier',
                              read_handlers=['program', 'pattern$i'],
                              write_handlers=['pattern$i']
                              )
+
+RegexMatcher = build_element("RegexMatcher",
+                             list_argument=ListArguments('pattern'),
+                             keywords=[
+                                 KeywordArgument('payload_only'),
+                                 KeywordArgument('match_all'),
+                             ],
+                             read_handlers=['payload_only', 'match_all', 'pattern$i'],
+                             write_handlers=['payload_only', 'match_all', 'pattern$i'])

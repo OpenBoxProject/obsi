@@ -15,27 +15,14 @@ class RegexSet {
     void reset();
     bool is_open() const;
     int match_first(const char* data, int length) const;
-    int match_first(const String& s) const;
-    int match_first(const Packet *p) const;
     bool match_any(const char *data, int length) const;
-    bool match_any(const String& s) const;
-    bool match_any(const Packet *p) const;
-
+    bool match_all(const char *data, int length) const;
 
   private:
     bool _compiled;
+    unsigned _npatterns; 
     re2::RE2::Set *_compiled_regex; 
 };
-
-// Match a packet against a set of Regex patterns,
-// return the first pattern matched or -1 if no match
-inline int RegexSet::match_first(const Packet* p) const{
-    return match_first((char*)p->data(), p->length());
-}
-
-inline int RegexSet::match_first(const String& s) const {
-    return match_first(s.c_str(), s.length());
-}
 
 inline int RegexSet::match_first(const char *data, int length) const {
     std::vector<int> matched_patterns;
@@ -54,13 +41,6 @@ inline int RegexSet::match_first(const char *data, int length) const {
     return first_match;
 }
 
-inline bool RegexSet::match_any(const String& s) const {
-    return match_any(s.c_str(), s.length());
-}
-
-inline bool RegexSet::match_any(const Packet *p) const {
-    return match_any((char*) p->data(), p->length());
-}
 
 inline bool RegexSet::match_any(const char *data, int length) const {
     std::vector<int> matched_patterns;
@@ -68,6 +48,14 @@ inline bool RegexSet::match_any(const char *data, int length) const {
     return _compiled_regex->Match(string_data, &matched_patterns);
 }
 
+inline bool RegexSet::match_all(const char *data, int length) const {
+    std::vector<int> matched_patterns;
+    re2::StringPiece string_data(data, length);
+    if (!_compiled_regex->Match(string_data, &matched_patterns)) {
+        return false;
+    }
+    return matched_patterns.size() == _npatterns;
+}
 
 CLICK_ENDDECLS
 #endif /* CLICK_REGEXSET_H_ */

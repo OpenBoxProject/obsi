@@ -556,3 +556,34 @@ class HeaderClassifier(ClickBlock):
             return [' '.join(clauses)]
         else:
             return ['-']
+
+RegexMatcher = build_click_block('RegexMatcher',
+                                 config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                                     match_all=_no_transform('match_all'),
+                                                     payload_only=_no_transform('payload_only')),
+                                 elements=[
+                                     dict(name='regex_matcher', type='RegexMatcher',
+                                          config=dict(pattern='$pattern', payload_only='$payload_only',
+                                                      match_all='$match_all')),
+                                     dict(name='counter', type='MultiCounter', config={}),
+                                 ],
+                                 connections=[
+                                     dict(src='regex_matcher', dst='counter', src_port=0, dst_port=0),
+                                     dict(src='regex_matcher', dst='counter', src_port=1, dst_port=1),
+                                 ],
+                                 input='regex_matcher',
+                                 output='counter',
+                                 read_mapping=dict(
+                                     count=('counter', 'count', 'identity'),
+                                     byte_count=('counter', 'byte_count', 'identity'),
+                                     rate=('counter', 'rate', 'identity'),
+                                     byte_rate=('counter', 'byte_rate', 'identity'),
+                                     match_all=('regex_matcher', 'match_all', 'identity'),
+                                     payload_only=('regex_matcher', 'payload_only', 'identity'),
+                                 ),
+                                 write_mapping=dict(
+                                     reset_counts=('counter', 'reset_counts', 'identity'),
+                                     match_all=('regex_matcher', 'match_all', 'to_lower'),
+                                     payload_only=('regex_matcher', 'payload_only', 'to_lower'),
+                                 )
+                                 )
