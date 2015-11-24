@@ -327,13 +327,13 @@ RegexMatcher = build_open_box_block('RegexMatcher',
                                         HandlerField('byte_count', FieldType.INTEGER),
                                         HandlerField('rate', FieldType.NUMBER),
                                         HandlerField('byte_rate', FieldType.NUMBER),
-                                        HandlerField('payload_only', FieldType.NUMBER),
-                                        HandlerField('match_all', FieldType.NUMBER),
+                                        HandlerField('payload_only', FieldType.BOOLEAN),
+                                        HandlerField('match_all', FieldType.BOOLEAN),
                                     ],
                                     write_handlers=[
                                         HandlerField('reset_counts', FieldType.NULL),
-                                        HandlerField('payload_only', FieldType.NUMBER),
-                                        HandlerField('match_all', FieldType.NUMBER),
+                                        HandlerField('payload_only', FieldType.BOOLEAN),
+                                        HandlerField('match_all', FieldType.BOOLEAN),
                                     ]
                                     )
 
@@ -347,11 +347,11 @@ RegexClassifier = build_open_box_block('RegexClassifier',
                                            HandlerField('byte_count', FieldType.INTEGER),
                                            HandlerField('rate', FieldType.NUMBER),
                                            HandlerField('byte_rate', FieldType.NUMBER),
-                                           HandlerField('payload_only', FieldType.NUMBER),
+                                           HandlerField('payload_only', FieldType.BOOLEAN),
                                        ],
                                        write_handlers=[
                                            HandlerField('reset_counts', FieldType.NULL),
-                                           HandlerField('payload_only', FieldType.NUMBER),
+                                           HandlerField('payload_only', FieldType.BOOLEAN),
                                        ]
                                        )
 
