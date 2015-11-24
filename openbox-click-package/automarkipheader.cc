@@ -5,8 +5,10 @@
 #include <clicknet/ether.h>
 CLICK_DECLS
 
-AutoMarkIPHeader::AutoMarkIPHeader() 
-: _ethertype_8021q(htons(ETHERTYPE_8021Q)), _ethertype_ip(htons(ETHERTYPE_IP))
+AutoMarkIPHeader::AutoMarkIPHeader() :
+_ethertype_8021q(htons(ETHERTYPE_8021Q)), 
+_ethertype_ip(htons(ETHERTYPE_IP)), 
+_ethertype_ip6(htons(ETHERTYPE_IP6))
 {
 }
 
@@ -24,11 +26,18 @@ AutoMarkIPHeader::simple_action(Packet *p)
 		if (vlan->ether_vlan_encap_proto == _ethertype_ip) {
 			const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + sizeof(click_ether_vlan));
   			p->set_ip_header(ip, ip->ip_hl << 2);
+		} else if (vlan->ether_vlan_encap_proto == _ethertype_ip6) {
+			const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + sizeof(click_ether_vlan));
+  			p->set_ip6_header(ip6, 10 << 2);
 		}	
 	} else if (vlan->ether_vlan_proto == _ethertype_ip) {
 		const click_ip *ip = reinterpret_cast<const click_ip *>(p->data() + sizeof(click_ether));
   		p->set_ip_header(ip, ip->ip_hl << 2);
+  	} else if (vlan->ether_vlan_proto == _ethertype_ip6) {
+  		const click_ip6 *ip6 = reinterpret_cast<const click_ip6 *>(p->data() + sizeof(click_ether_vlan));
+  		p->set_ip6_header(ip6, 10 << 2);
   	}
+  	
 	return p;
 }
 

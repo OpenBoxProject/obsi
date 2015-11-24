@@ -32,6 +32,7 @@ class AutoMarkIPHeader : public Element {
  private:
  	uint16_t _ethertype_8021q;
 	uint16_t _ethertype_ip;
+	uint16_t _ethertype_ip6;
 
 };
 
