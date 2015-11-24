@@ -8,7 +8,7 @@ CLICK_DECLS
 =c
 StringMatcher(STRING_1, ..., STRING_1)
 
-=s local
+=s classification
 Matches a packet based on a set of strings
 
 =d

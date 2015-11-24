@@ -8,7 +8,7 @@ CLICK_DECLS
 =c
 RegexClassifier(PATTERN_1, ..., PATTERN_N)
 
-=s local
+=s classification
 classifies packets by contents
 
 =d
