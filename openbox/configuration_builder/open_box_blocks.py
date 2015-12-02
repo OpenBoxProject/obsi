@@ -450,3 +450,20 @@ Queue = build_open_box_block('Queue',
                                  HandlerField('reset', FieldType.INTEGER)
                              ]
                              )
+
+NetworkDirectionSwap = build_open_box_block('NetworkDirectionSwap',
+                                            config_fields=[
+                                                ConfigField('ethernet', False, FieldType.BOOLEAN),
+                                                ConfigField('ipv4', False, FieldType.BOOLEAN),
+                                                ConfigField('ipv6', False, FieldType.BOOLEAN),
+                                                ConfigField('tcp', False, FieldType.BOOLEAN),
+                                                ConfigField('udp', False, FieldType.BOOLEAN),
+                                            ],
+                                            read_handlers=[
+                                                HandlerField('ethernet', FieldType.BOOLEAN),
+                                                HandlerField('ipv4', FieldType.BOOLEAN),
+                                                HandlerField('ipv6', FieldType.BOOLEAN),
+                                                HandlerField('tcp', FieldType.BOOLEAN),
+                                                HandlerField('udp', FieldType.BOOLEAN),
+                                            ])
+

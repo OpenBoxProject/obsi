@@ -424,3 +424,14 @@ Queue = build_element('Queue',
                       read_handlers=['length', 'highwater_length', 'capacity', 'drops'],
                       write_handlers=['reset_counts', 'reset']
                       )
+
+NetworkDirectionSwap = build_element('NetworkDirectionSwap',
+                                     keywords=[
+                                         KeywordArgument('ethernet'),
+                                         KeywordArgument('ipv4'),
+                                         KeywordArgument('ipv6'),
+                                         KeywordArgument('tcp'),
+                                         KeywordArgument('udp'),
+                                     ],
+                                     read_handlers=['ethernet', 'ipv4', 'ipv6', 'tcp', 'udp'],
+                                     write_handlers=['ethernet', 'ipv4', 'ipv6', 'tcp', 'udp'])

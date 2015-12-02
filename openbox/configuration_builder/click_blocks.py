@@ -738,3 +738,30 @@ Queue = build_click_block('Queue',
                               reset=('queue', 'reset', 'identity'),
                           )
                           )
+
+NetworkDirectionSwap = build_click_block('NetworkDirectionSwap',
+                                         config_mapping=dict(ethernet=_no_transform('ethernet'),
+                                                             ipv4=_no_transform('ipv4'),
+                                                             ipv6=_no_transform('ipv6'),
+                                                             tcp=_no_transform('tcp'),
+                                                             udp=_no_transform('udp')),
+                                         elements=[dict(name='network_direction_swap', type='NetworkDirectionSwap',
+                                                        config=dict(ethernet='$ethernet', ipv4='$ipv4', ipv6='$ipv6',
+                                                                    tcp='$tcp', udp='$udp'))],
+                                         input='network_direction_swap',
+                                         output='network_direction_swap',
+                                         read_mapping=dict(
+                                             ethernet=('network_direction_swap', 'ethernet', 'identity'),
+                                             ipv4=('network_direction_swap', 'ipv4', 'identity'),
+                                             ipv6=('network_direction_swap', 'ipv6', 'identity'),
+                                             tcp=('network_direction_swap', 'tcp', 'identity'),
+                                             udp=('network_direction_swap', 'udp', 'identity'),
+                                         ),
+                                         write_mapping=dict(
+                                             ethernet=('network_direction_swap', 'ethernet', 'identity'),
+                                             ipv4=('network_direction_swap', 'ipv4', 'identity'),
+                                             ipv6=('network_direction_swap', 'ipv6', 'identity'),
+                                             tcp=('network_direction_swap', 'tcp', 'identity'),
+                                             udp=('network_direction_swap', 'udp', 'identity'),
+                                         )
+                                         )
