@@ -108,5 +108,20 @@ NetworkDirectionSwap::simple_action(Packet *p)
 	
 }
 
+void
+NetworkDirectionSwap::add_handlers()
+{
+    add_read_handler("ethernet", read_keyword_handler, "ETHERNET");
+    add_write_handler("ethernet", reconfigure_keyword_handler, "ETHERNET");
+    add_read_handler("ipv4", read_keyword_handler, "IPV4");
+    add_write_handler("ipv4", reconfigure_keyword_handler, "IPV4");
+    add_read_handler("ipv6", read_keyword_handler, "IPV6");
+    add_write_handler("ipv6", reconfigure_keyword_handler, "IPV6");
+    add_read_handler("tcp", read_keyword_handler, "TCP");
+    add_write_handler("tcp", reconfigure_keyword_handler, "TCP");
+    add_read_handler("udp", read_keyword_handler, "UDP");
+    add_write_handler("udp", reconfigure_keyword_handler, "UDP");
+}
+
 CLICK_ENDDECLS
 EXPORT_ELEMENT(NetworkDirectionSwap)

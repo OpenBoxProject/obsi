@@ -5,7 +5,7 @@ CLICK_DECLS
 
 /*
  * =c
- * NetworkDirectionSwap([ETHERNET, IPV4, TCP, UDP])
+ * NetworkDirectionSwap([ETHERNET, IPV4, IPV6, TCP, UDP])
  * =s basicmod
  * swaps network direction of packet
  *
@@ -23,7 +23,7 @@ Boolean. If true ethernet layer will swap direction.
 
 Boolean. If true IPv4 layer will swap direction.
 
-=item IPV4
+=item IPV6
 
 Boolean. If true IPv6 layer will swap direction.
 
@@ -49,6 +49,8 @@ public:
   const char *port_count() const	{ return PORTS_1_1; }
 
   int configure(Vector<String> &conf, ErrorHandler *errh) CLICK_COLD;
+  bool can_live_reconfigure() const { return true; }
+  void add_handlers() CLICK_COLD;
   Packet *simple_action(Packet *);
 
 private:
