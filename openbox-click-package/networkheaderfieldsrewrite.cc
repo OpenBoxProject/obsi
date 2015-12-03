@@ -20,6 +20,11 @@ _ipv4_src_set(false),
 _ipv4_dst_set(false),
 _ipv4_dscp_set(false),
 _ipv4_ttl_set(false),
+_ipv4_ecn_set(false),
+_tcp_src_set(false),
+_tcp_dst_set(false),
+_udp_src_set(false),
+_udp_dst_set(false),
 _ethertype_8021q(htons(ETHERTYPE_8021Q)), 
 _ethertype_ip(htons(ETHERTYPE_IP)), 
 _ethertype_ip6(htons(ETHERTYPE_IP6))
@@ -34,6 +39,7 @@ int
 NetworkHeaderFieldsRewrite::configure(Vector<String> &conf, ErrorHandler *errh)
 {
 	unsigned dscp_val = 0;
+	unsigned ecn_val = 0;
     if (Args(conf, this, errh)
     .read("ETH_SRC", _eth_src).read_status(_eth_src_set)
     .read("ETH_DST", _eth_dst).read_status(_eth_dst_set)
@@ -43,6 +49,7 @@ NetworkHeaderFieldsRewrite::configure(Vector<String> &conf, ErrorHandler *errh)
     .read("IPV4_DST", _ipv4_dst).read_status(_ipv4_dst_set)
     .read("IPV4_DSCP", dscp_val).read_status(_ipv4_dscp_set)
     .read("IPV4_TTL", _ipv4_ttl).read_status(_ipv4_ttl_set)
+    .read("IPV4_ECN", ecn_val).read_status(_ipv4_ecn_set)
     .read("TCP_SRC", _tcp_src).read_status(_tcp_src_set)
     .read("TCP_DST", _tcp_dst).read_status(_tcp_dst_set)
     .read("UDP_SRC", _udp_src).read_status(_udp_src_set)
@@ -50,12 +57,15 @@ NetworkHeaderFieldsRewrite::configure(Vector<String> &conf, ErrorHandler *errh)
     .complete() < 0) {
     	return -1;
     }
-
+    if (ecn_val > 3) {
+    	return errh->error("ECN out of range");
+    }
     if (dscp_val > 0x3f) {
     	return errh->error("diffserv code point out of range");
     }
     _ipv4_dscp = (dscp_val << 2);
-    _any_ipv4_set = _ipv4_proto_set || _ipv4_src_set || _ipv4_dst_set || _ipv4_dscp_set || _ipv4_ttl_set;
+    _ipv4_ecn = ecn_val; 
+    _any_ipv4_set = _ipv4_proto_set || _ipv4_src_set || _ipv4_dst_set || _ipv4_dscp_set || _ipv4_ttl_set || _ipv4_ecn_set;
     _any_tcp_set = _tcp_dst_set || _tcp_src_set;
     _any_udp_set = _udp_dst_set || _udp_src_set;
     _any_set = _eth_src_set || _eth_dst_set || _eth_type_set || _any_ipv4_set || _any_udp_set || _any_tcp_set;
@@ -103,6 +113,7 @@ NetworkHeaderFieldsRewrite::simple_action(Packet *p)
 		iph->ip_p = _ipv4_proto_set ? _ipv4_proto : iph->ip_p;
 		iph->ip_ttl = _ipv4_ttl_set ? _ipv4_ttl : iph->ip_ttl;
 		iph->ip_tos = _ipv4_dscp_set ? ((iph->ip_tos & 0x3) | _ipv4_dscp) : iph->ip_tos;
+		iph->ip_tos = _ipv4_ecn_set ? (iph->ip_tos & IP_DSCPMASK) | _ipv4_ecn : iph->ip_tos;
 		if (_ipv4_src_set) {
 			memcpy(neth + 12, &_ipv4_src, 4);
 		}
@@ -157,6 +168,8 @@ NetworkHeaderFieldsRewrite::add_handlers()
     add_write_handler("ipv4_src", reconfigure_keyword_handler, "IPV4_SRC");
     add_read_handler("ipv4_dst", read_keyword_handler, "IPV4_DST");
     add_write_handler("ipv4_dst", reconfigure_keyword_handler, "IPV4_DST");
+    add_read_handler("ipv4_ecn", read_keyword_handler, "IPV4_ECN");
+    add_write_handler("ipv4_ecn", reconfigure_keyword_handler, "IPV4_ECN");
     add_read_handler("tcp_src", read_keyword_handler, "TCP_SRC");
     add_write_handler("tcp_src", reconfigure_keyword_handler, "TCP_SRC");
     add_read_handler("tcp_dst", read_keyword_handler, "TCP_DST");
