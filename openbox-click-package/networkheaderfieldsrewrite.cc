@@ -134,7 +134,7 @@ NetworkHeaderFieldsRewrite::simple_action(Packet *p)
 			udph->uh_dport = _udp_dst_set ? htons(_udp_dst) : udph->uh_dport;
 		}
 	}
-	
+
 	return q;	
 }
 
@@ -147,6 +147,24 @@ NetworkHeaderFieldsRewrite::add_handlers()
     add_write_handler("eth_dst", reconfigure_keyword_handler, "ETH_DST");
     add_read_handler("eth_type", read_keyword_handler, "ETH_TYPE");
     add_write_handler("eth_type", reconfigure_keyword_handler, "ETH_TYPE");
+    add_read_handler("ipv4_proto", read_keyword_handler, "IPV4_PROTO");
+    add_write_handler("ipv4_proto", reconfigure_keyword_handler, "IPV4_PROTO");
+    add_read_handler("ipv4_ttl", read_keyword_handler, "IPV4_TTL");
+    add_write_handler("ipv4_ttl", reconfigure_keyword_handler, "IPV4_TTL");
+    add_read_handler("ipv4_dscp", read_keyword_handler, "IPV4_DSCP");
+    add_write_handler("ipv4_dscp", reconfigure_keyword_handler, "IPV4_DSCP");
+    add_read_handler("ipv4_src", read_keyword_handler, "IPV4_SRC");
+    add_write_handler("ipv4_src", reconfigure_keyword_handler, "IPV4_SRC");
+    add_read_handler("ipv4_dst", read_keyword_handler, "IPV4_DST");
+    add_write_handler("ipv4_dst", reconfigure_keyword_handler, "IPV4_DST");
+    add_read_handler("tcp_src", read_keyword_handler, "TCP_SRC");
+    add_write_handler("tcp_src", reconfigure_keyword_handler, "TCP_SRC");
+    add_read_handler("tcp_dst", read_keyword_handler, "TCP_DST");
+    add_write_handler("tcp_dst", reconfigure_keyword_handler, "TCP_DST");
+    add_read_handler("udp_src", read_keyword_handler, "UDP_SRC");
+    add_write_handler("udp_src", reconfigure_keyword_handler, "UDP_SRC");
+    add_read_handler("udp_dst", read_keyword_handler, "UDP_DST");
+    add_write_handler("udp_dst", reconfigure_keyword_handler, "UDP_DST");
 }
 
 CLICK_ENDDECLS
