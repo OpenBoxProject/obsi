@@ -465,5 +465,12 @@ NetworkDirectionSwap = build_open_box_block('NetworkDirectionSwap',
                                                 HandlerField('ipv6', FieldType.BOOLEAN),
                                                 HandlerField('tcp', FieldType.BOOLEAN),
                                                 HandlerField('udp', FieldType.BOOLEAN),
+                                            ],
+                                            write_handlers=[
+                                                HandlerField('ethernet', FieldType.BOOLEAN),
+                                                HandlerField('ipv4', FieldType.BOOLEAN),
+                                                HandlerField('ipv6', FieldType.BOOLEAN),
+                                                HandlerField('tcp', FieldType.BOOLEAN),
+                                                HandlerField('udp', FieldType.BOOLEAN),
                                             ])
 
