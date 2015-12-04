@@ -21,6 +21,8 @@ class FieldType:
     NULL = 'null'
     OBJECT = 'object'
     STRING = 'string'
+    MAC_ADDRESS = 'mac_address'
+    IPV4_ADDRESS = 'ipv4_address'
     MATCH_PATTERNS = 'match_patterns'
     IPV4_TRANSLATION_RULES = 'ipv4_translator_rules'
 
@@ -32,6 +34,8 @@ class ConfigField(object):
                                 re.compile(r'keep \d+ \d+'),
                                 re.compile(
                                     r"pattern ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ \d+ \d+")]
+    _MAC_ADDRESS = re.compile(r"^([0-9A-Fa-f]{2}:){5}([0-9A-Fa-f]{2})$")
+    _IPV4_ADDRESS = re.compile(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
 
     def __init__(self, name, required, type, description=None):
         self.name = name
@@ -60,6 +64,10 @@ class ConfigField(object):
         elif self.type == FieldType.IPV4_TRANSLATION_RULES:
             return (isinstance(value, (tuple, list)) and
                     all(self._is_valid_ipv4_translation_rule(input_spec) for input_spec in value))
+        elif self.type == FieldType.MAC_ADDRESS:
+            return isinstance(value, str) and self._is_valid_mac_address(value)
+        elif self.type == FieldType.IPV4_ADDRESS:
+            return isinstance(value, str) and self._is_valid_ipv4_address(value)
 
     def _is_valid_match_pattern(self, pattern):
         return isinstance(pattern, dict) and all(field in self._SUPPORTED_MATCH_FIELDS for field in pattern)
@@ -77,6 +85,12 @@ class ConfigField(object):
         result['type'] = self.type
         result['description'] = self.description
         return result
+
+    def _is_valid_mac_address(self, value):
+        return self._MAC_ADDRESS.match(value) is not None
+
+    def _is_valid_ipv4_address(self, value):
+        return self._IPV4_ADDRESS.match(value) is not None
 
 
 class HandlerField(object):
@@ -474,3 +488,49 @@ NetworkDirectionSwap = build_open_box_block('NetworkDirectionSwap',
                                                 HandlerField('udp', FieldType.BOOLEAN),
                                             ])
 
+NetworkHeaderFieldsRewriter = build_open_box_block('NetworkHeaderFieldsRewriter',
+                                                   config_fields=[
+                                                       ConfigField('eth_src', False, FieldType.MAC_ADDRESS),
+                                                       ConfigField('eth_dst', False, FieldType.MAC_ADDRESS),
+                                                       ConfigField('eth_type', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_proto', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_dscp', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_ecn', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_ttl', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_src', False, FieldType.IPV4_ADDRESS),
+                                                       ConfigField('ipv4_dst', False, FieldType.IPV4_ADDRESS),
+                                                       ConfigField('tcp_src', False, FieldType.INTEGER),
+                                                       ConfigField('tcp_dst', False, FieldType.INTEGER),
+                                                       ConfigField('udp_src', False, FieldType.INTEGER),
+                                                       ConfigField('udp_dst', False, FieldType.INTEGER),
+                                                   ],
+                                                   read_handlers=[
+                                                       HandlerField('eth_src', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_dst', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_type', FieldType.INTEGER),
+                                                       HandlerField('ipv4_proto', FieldType.INTEGER),
+                                                       HandlerField('ipv4_dscp', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ecn', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ttl', FieldType.INTEGER),
+                                                       HandlerField('ipv4_src', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('ipv4_dst', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('tcp_src', FieldType.INTEGER),
+                                                       HandlerField('tcp_dst', FieldType.INTEGER),
+                                                       HandlerField('udp_src', FieldType.INTEGER),
+                                                       HandlerField('udp_dst', FieldType.INTEGER)
+                                                   ],
+                                                   write_handlers=[
+                                                       HandlerField('eth_src', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_dst', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_type', FieldType.INTEGER),
+                                                       HandlerField('ipv4_proto', FieldType.INTEGER),
+                                                       HandlerField('ipv4_dscp', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ecn', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ttl', FieldType.INTEGER),
+                                                       HandlerField('ipv4_src', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('ipv4_dst', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('tcp_src', FieldType.INTEGER),
+                                                       HandlerField('tcp_dst', FieldType.INTEGER),
+                                                       HandlerField('udp_src', FieldType.INTEGER),
+                                                       HandlerField('udp_dst', FieldType.INTEGER)
+                                                   ])
