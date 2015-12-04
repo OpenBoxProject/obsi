@@ -1,5 +1,5 @@
 #include <click/config.h>
-#include "networkheaderfieldsrewrite.hh"
+#include "networkheaderfieldsrewriter.hh"
 #include <click/args.hh>
 #include <click/error.hh>
 #include <clicknet/ether.h>
@@ -9,7 +9,7 @@
 #include <clicknet/tcp.h>
 CLICK_DECLS
 
-NetworkHeaderFieldsRewrite::NetworkHeaderFieldsRewrite() :
+NetworkHeaderFieldsRewriter::NetworkHeaderFieldsRewriter() :
 _eth_dst_set(false), 
 _eth_src_set(false), 
 _eth_type_set(false),
@@ -31,12 +31,12 @@ _ethertype_ip6(htons(ETHERTYPE_IP6))
 {
 }
 
-NetworkHeaderFieldsRewrite::~NetworkHeaderFieldsRewrite()
+NetworkHeaderFieldsRewriter::~NetworkHeaderFieldsRewriter()
 {
 }
 
 int
-NetworkHeaderFieldsRewrite::configure(Vector<String> &conf, ErrorHandler *errh)
+NetworkHeaderFieldsRewriter::configure(Vector<String> &conf, ErrorHandler *errh)
 {
 	unsigned dscp_val = 0;
 	unsigned ecn_val = 0;
@@ -73,7 +73,7 @@ NetworkHeaderFieldsRewrite::configure(Vector<String> &conf, ErrorHandler *errh)
 }
 
 Packet *
-NetworkHeaderFieldsRewrite::simple_action(Packet *p)
+NetworkHeaderFieldsRewriter::simple_action(Packet *p)
 {
 	if (!_any_set) {
 		return p;
@@ -150,7 +150,7 @@ NetworkHeaderFieldsRewrite::simple_action(Packet *p)
 }
 
 void
-NetworkHeaderFieldsRewrite::add_handlers()
+NetworkHeaderFieldsRewriter::add_handlers()
 {
     add_read_handler("eth_src", read_keyword_handler, "ETH_SRC");
     add_write_handler("eth_src", reconfigure_keyword_handler, "ETH_SRC");
@@ -181,4 +181,4 @@ NetworkHeaderFieldsRewrite::add_handlers()
 }
 
 CLICK_ENDDECLS
-EXPORT_ELEMENT(NetworkHeaderFieldsRewrite)
+EXPORT_ELEMENT(NetworkHeaderFieldsRewriter)
