@@ -1,9 +1,17 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 import functools
 import re
 import json
 import sys
+
 import transformations
-from matching_fields import IntMatchField, Ipv4MatchField, BitsIntMatchField, MacMatchField
+from matching import CompoundMatch, HeaderMatch
 from configuration_builder_exceptions import ClickBlockConfigurationError, ConnectionConfigurationError
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection, MultiConnection
@@ -343,10 +351,12 @@ FromDevice = build_click_block('FromDevice',
                                elements=[
                                    dict(name='from_device', type='FromDevice',
                                         config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc')),
+                                   dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                    dict(name='counter', type='Counter', config={})
                                ],
                                connections=[
-                                   dict(src='from_device', dst='counter', src_port=0, dst_port=0),
+                                   dict(src='from_device', dst='mark_ip_header', src_port=0, dst_port=0),
+                                   dict(src='mark_ip_header', dst='counter', src_port=0, dst_port=0),
                                ],
                                output='counter',
                                read_mapping=dict(count=('counter', 'count', 'to_int'),
@@ -363,10 +373,12 @@ FromDump = build_click_block('FromDump',
                              elements=[
                                  dict(name='from_dump', type='FromDump',
                                       config=dict(filename='$filename', timing='$timing', active='$active')),
+                                 dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                  dict(name='counter', type='Counter', config={})
                              ],
                              connections=[
-                                 dict(src='from_dump', dst='counter', src_port=0, dst_port=0),
+                                 dict(src='from_dump', dst='mark_ip_header', src_port=0, dst_port=0),
+                                 dict(src='mark_ip_header', dst='counter', src_port=0, dst_port=0),
                              ],
                              output='counter',
                              read_mapping=dict(
@@ -456,6 +468,7 @@ class HeaderClassifier(ClickBlock):
     # Fake attributes used by other API functions
     __elements__ = (dict(name='counter', type='MultiCounter', config={}),
                     dict(name='classifier', type='Classifier', config=dict(pattern=[])))
+
     __input__ = 'classifier'
     __output__ = 'counter'
     __read_mapping__ = dict(
@@ -492,63 +505,392 @@ class HeaderClassifier(ClickBlock):
                                                 self._to_external_element_name('counter'), i, rule_number))
 
     def _compile_match_patterns(self):
+        matches = [HeaderMatch(match) for match in self._block.match]
         patterns = []
         rule_numbers = []
-        for i, match in enumerate(self._block.match):
-            for pattern in self._compile_match_pattern(match):
+        for i, match in enumerate(matches):
+            for pattern in match.to_patterns():
                 patterns.append(pattern)
                 rule_numbers.append(i)
         return patterns, rule_numbers
 
-    def _compile_match_pattern(self, match):
+
+RegexMatcher = build_click_block('RegexMatcher',
+                                 config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                                     match_all=_no_transform('match_all'),
+                                                     payload_only=_no_transform('payload_only')),
+                                 elements=[
+                                     dict(name='regex_matcher', type='RegexMatcher',
+                                          config=dict(pattern='$pattern', payload_only='$payload_only',
+                                                      match_all='$match_all')),
+                                     dict(name='counter', type='MultiCounter', config={}),
+                                 ],
+                                 connections=[
+                                     dict(src='regex_matcher', dst='counter', src_port=0, dst_port=0),
+                                     dict(src='regex_matcher', dst='counter', src_port=1, dst_port=1),
+                                 ],
+                                 input='regex_matcher',
+                                 output='counter',
+                                 read_mapping=dict(
+                                     count=('counter', 'count', 'identity'),
+                                     byte_count=('counter', 'byte_count', 'identity'),
+                                     rate=('counter', 'rate', 'identity'),
+                                     byte_rate=('counter', 'byte_rate', 'identity'),
+                                     match_all=('regex_matcher', 'match_all', 'identity'),
+                                     payload_only=('regex_matcher', 'payload_only', 'identity'),
+                                 ),
+                                 write_mapping=dict(
+                                     reset_counts=('counter', 'reset_counts', 'identity'),
+                                     match_all=('regex_matcher', 'match_all', 'to_lower'),
+                                     payload_only=('regex_matcher', 'payload_only', 'to_lower'),
+                                 )
+                                 )
+
+RegexClassifier = build_click_block('RegexClassifier',
+                                    config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                                        payload_only=_no_transform('payload_only')),
+                                    elements=[
+                                        dict(name='regex_classifier', type='RegexClassifier',
+                                             config=dict(pattern='$pattern', payload_only='$payload_only')),
+                                        dict(name='counter', type='MultiCounter', config={}),
+                                    ],
+                                    multi_connections=[
+                                        dict(src='regex_classifier', dst='counter', based_on='pattern')
+                                    ],
+                                    input='regex_classifier',
+                                    output='counter',
+                                    read_mapping=dict(
+                                        count=('counter', 'count', 'identity'),
+                                        byte_count=('counter', 'byte_count', 'identity'),
+                                        rate=('counter', 'rate', 'identity'),
+                                        byte_rate=('counter', 'byte_rate', 'identity'),
+                                        payload_only=('regex_classifier', 'payload_only', 'identity'),
+                                    ),
+                                    write_mapping=dict(
+                                        reset_counts=('counter', 'reset_counts', 'identity'),
+                                        payload_only=('regex_classifier', 'payload_only', 'to_lower'),
+                                    )
+                                    )
+
+VlanDecapsulate = build_click_block('VlanDecapsulate',
+                                    elements=[dict(name='vlan_decap', type='VLANDecap', config={})],
+                                    input='vlan_decap',
+                                    output='vlan_decap',
+                                    )
+
+VlanEncapsulate = build_click_block('VlanEncapsulate',
+                                    config_mapping=dict(
+                                        vlan_tci=(['vlan_vid', 'vlan_dei', 'vlan_pcp'], "to_vlan_tci"),
+                                        vlan_pcp=(['vlan_pcp'], 'to_int'),
+                                        ethertype=_no_transform('ethertype')
+                                    ),
+                                    elements=[dict(name='vlan_encap', type='VLANEncap',
+                                                   config=dict(vlan_tci='$vlan_tci', vlan_pcp='$vlan_pcp',
+                                                               ethertype='$ethertype'))],
+                                    input='vlan_encap',
+                                    output='vlan_encap',
+                                    read_mapping=dict(
+                                        vlan_vid=('vlan_encap', 'vlan_vid', 'identity'),
+                                        vlan_pcp=('vlan_encap', 'vlan_pcp', 'identity'),
+                                        vlan_tci=('vlan_encap', 'vlan_tci', 'identity'),
+                                        ethertype=('vlan_encap', 'ethertype', 'identity'),
+                                    ),
+                                    write_mapping=dict(
+                                        vlan_vid=('vlan_encap', 'vlan_vid', 'identity'),
+                                        vlan_pcp=('vlan_encap', 'vlan_pcp', 'identity'),
+                                        vlan_tci=('vlan_encap', 'vlan_tci', 'identity'),
+                                        ethertype=('vlan_encap', 'ethertype', 'identity'),
+                                    )
+                                    )
+
+DecIpTtl = build_click_block('DecIpTtl',
+                             config_mapping=dict(active=_no_transform('active')),
+                             elements=[
+                                 dict(name='dec_ip_ttl', type='DecIPTTL',
+                                      config=dict(active='$active')),
+                                 dict(name='counter', type='MultiCounter', config={}),
+                             ],
+                             connections=[
+                                 dict(src='dec_ip_ttl', dst='counter', src_port=0, dst_port=0),
+                                 dict(src='dec_ip_ttl', dst='counter', src_port=1, dst_port=1),
+                             ],
+                             input='dec_ip_ttl',
+                             output='counter',
+                             read_mapping=dict(
+                                 count=('counter', 'count', 'identity'),
+                                 byte_count=('counter', 'byte_count', 'identity'),
+                                 rate=('counter', 'rate', 'identity'),
+                                 byte_rate=('counter', 'byte_rate', 'identity'),
+                                 active=('dec_ip_ttl', 'active', 'identity'),
+                             ),
+                             write_mapping=dict(
+                                 reset_counts=('counter', 'reset_counts', 'identity'),
+                                 active=('dec_ip_ttl', 'active', 'to_lower'),
+                             ))
+
+Ipv4AddressTranslator = build_click_block('Ipv4AddressTranslator',
+                                          config_mapping=dict(
+                                              input_spec=_no_transform('input_spec'),
+                                              tcp_timeout=_no_transform('tcp_timeout'),
+                                              tcp_done_timeout=_no_transform('tcp_done_timeout'),
+                                              tcp_nodata_timeout=_no_transform('tcp_nodata_timeout'),
+                                              tcp_guarantee=_no_transform('tcp_guarantee'),
+                                              udp_timeout=_no_transform('udp_timeout'),
+                                              udp_streaming_timeout=_no_transform('udp_streaming_timeout'),
+                                              udp_guarantee=_no_transform('udp_guarantee'),
+                                              reap_interval=_no_transform('reap_interval'),
+                                              mapping_capacity=_no_transform('mapping_capacity')
+                                          ),
+                                          elements=[dict(name='ip_rewriter', type='IPRewriter',
+                                                         config=dict(
+                                                             input_spec='$input_spec',
+                                                             tcp_timeout='$tcp_timeout',
+                                                             tcp_done_timeout='$tcp_done_timeout',
+                                                             tcp_nodata_timeout='$tcp_nodata_timeout',
+                                                             tcp_guarantee='$tcp_guarantee',
+                                                             udp_timeout='$udp_timeout',
+                                                             udp_streaming_timeout='$udp_streaming_timeout',
+                                                             udp_guarantee='$udp_guarantee',
+                                                             reap_interval='$reap_interval',
+                                                             mapping_capacity='$mapping_capacity'
+                                                         ))],
+                                          input='ip_rewriter',
+                                          output='ip_rewriter',
+                                          read_mapping=dict(
+                                              mapping_count=('ip_rewriter', 'nmappings', 'identity'),
+                                              mapping_failures=('ip_rewriter', 'mapping_failures', 'identity'),
+                                              length=('ip_rewriter', 'length', 'identity'),
+                                              capacity=('ip_rewriter', 'capacity', 'identity'),
+                                              tcp_mappings=('ip_rewriter', 'tcp_mappings', 'identity'),
+                                              udp_mappings=('ip_rewriter', 'udp_mappings', 'identity'),
+                                          ),
+                                          write_mapping=dict(
+                                              capacity=('ip_rewriter', 'capacity', 'identity'),
+                                          )
+                                          )
+
+Queue = build_click_block('Queue',
+                          config_mapping=dict(
+                              capacity=_no_transform('capacity'),
+                          ),
+                          elements=[dict(name='queue', type='Queue', config=dict(capacity='$capacity'))],
+                          input='queue',
+                          output='queue',
+                          read_mapping=dict(
+                              length=('queue', 'length', 'identity'),
+                              highwater_length=('queue', 'highwater_length', 'identity'),
+                              drops=('queue', 'drops', 'identity'),
+                              capacity=('queue', 'capacity', 'identity'),
+
+                          ),
+                          write_mapping=dict(
+                              capacity=('queue', 'reset_counts', 'identity'),
+                              reset=('queue', 'reset', 'identity'),
+                          )
+                          )
+
+NetworkDirectionSwap = build_click_block('NetworkDirectionSwap',
+                                         config_mapping=dict(ethernet=_no_transform('ethernet'),
+                                                             ipv4=_no_transform('ipv4'),
+                                                             ipv6=_no_transform('ipv6'),
+                                                             tcp=_no_transform('tcp'),
+                                                             udp=_no_transform('udp')),
+                                         elements=[dict(name='network_direction_swap', type='NetworkDirectionSwap',
+                                                        config=dict(ethernet='$ethernet', ipv4='$ipv4', ipv6='$ipv6',
+                                                                    tcp='$tcp', udp='$udp'))],
+                                         input='network_direction_swap',
+                                         output='network_direction_swap',
+                                         read_mapping=dict(
+                                             ethernet=('network_direction_swap', 'ethernet', 'identity'),
+                                             ipv4=('network_direction_swap', 'ipv4', 'identity'),
+                                             ipv6=('network_direction_swap', 'ipv6', 'identity'),
+                                             tcp=('network_direction_swap', 'tcp', 'identity'),
+                                             udp=('network_direction_swap', 'udp', 'identity'),
+                                         ),
+                                         write_mapping=dict(
+                                             ethernet=('network_direction_swap', 'ethernet', 'identity'),
+                                             ipv4=('network_direction_swap', 'ipv4', 'identity'),
+                                             ipv6=('network_direction_swap', 'ipv6', 'identity'),
+                                             tcp=('network_direction_swap', 'tcp', 'identity'),
+                                             udp=('network_direction_swap', 'udp', 'identity'),
+                                         )
+                                         )
+
+NetworkHeaderFieldsRewriter = build_click_block('NetworkHeaderFieldsRewriter',
+                                                config_mapping=dict(eth_src=_no_transform('eth_src'),
+                                                                    eth_dst=_no_transform('eth_dst'),
+                                                                    eth_type=_no_transform('eth_type'),
+                                                                    ipv4_proto=_no_transform('ipv4_proto'),
+                                                                    ipv4_src=_no_transform('ipv4_src'),
+                                                                    ipv4_dst=_no_transform('ipv4_dst'),
+                                                                    ipv4_dscp=_no_transform('ipv4_dscp'),
+                                                                    ipv4_ecn=_no_transform('ipv4_ecn'),
+                                                                    ipv4_ttl=_no_transform('ipv4_ttl'),
+                                                                    tcp_src=_no_transform('tcp_src'),
+                                                                    tcp_dst=_no_transform('tcp_dst'),
+                                                                    udp_src=_no_transform('udp_src'),
+                                                                    udp_dst=_no_transform('udp_dst')),
+                                                elements=[
+                                                    dict(name='network_rewriter', type='NetworkHeaderFieldsRewriter',
+                                                         config=dict(eth_src='$eth_src',
+                                                                     eth_dst='$eth_dst',
+                                                                     eth_type='$eth_type',
+                                                                     ipv4_proto='$ipv4_proto',
+                                                                     ipv4_src='$ipv4_src',
+                                                                     ipv4_dst='$ipv4_dst',
+                                                                     ipv4_dscp='$ipv4_dscp',
+                                                                     ipv4_ecn='$ipv4_ecn',
+                                                                     ipv4_ttl='$ipv4_ttl',
+                                                                     tcp_src='$tcp_src',
+                                                                     tcp_dst='$tcp_dst',
+                                                                     udp_src='$udp_src',
+                                                                     udp_dst='$udp_dst'))
+                                                ],
+                                                input='network_rewriter', output='network_rewriter',
+                                                read_mapping=dict(
+                                                    eth_src=('network_rewriter', 'eth_src', 'identity'),
+                                                    eth_dst=('network_rewriter', 'eth_dst', 'identity'),
+                                                    eth_type=('network_rewriter', 'eth_type', 'identity'),
+                                                    ipv4_proto=('network_rewriter', 'ipv4_proto', 'identity'),
+                                                    ipv4_src=('network_rewriter', 'ipv4_src', 'identity'),
+                                                    ipv4_dst=('network_rewriter', 'ipv4_dst', 'identity'),
+                                                    ipv4_dscp=('network_rewriter', 'ipv4_dscp', 'identity'),
+                                                    ipv4_ecn=('network_rewriter', 'ipv4_ecn', 'identity'),
+                                                    ipv4_ttl=('network_rewriter', 'ipv4_ttl', 'identity'),
+                                                    tcp_src=('network_rewriter', 'tcp_src', 'identity'),
+                                                    tcp_dst=('network_rewriter', 'tcp_dst', 'identity'),
+                                                    udp_src=('network_rewriter', 'udp_src', 'identity'),
+                                                    udp_dst=('network_rewriter', 'udp_dst', 'identity')),
+                                                write_mapping=dict(
+                                                    eth_src=('network_rewriter', 'eth_src', 'identity'),
+                                                    eth_dst=('network_rewriter', 'eth_dst', 'identity'),
+                                                    eth_type=('network_rewriter', 'eth_type', 'identity'),
+                                                    ipv4_proto=('network_rewriter', 'ipv4_proto', 'identity'),
+                                                    ipv4_src=('network_rewriter', 'ipv4_src', 'identity'),
+                                                    ipv4_dst=('network_rewriter', 'ipv4_dst', 'identity'),
+                                                    ipv4_dscp=('network_rewriter', 'ipv4_dscp', 'identity'),
+                                                    ipv4_ecn=('network_rewriter', 'ipv4_ecn', 'identity'),
+                                                    ipv4_ttl=('network_rewriter', 'ipv4_ttl', 'identity'),
+                                                    tcp_src=('network_rewriter', 'tcp_src', 'identity'),
+                                                    tcp_dst=('network_rewriter', 'tcp_dst', 'identity'),
+                                                    udp_src=('network_rewriter', 'udp_src', 'identity'),
+                                                    udp_dst=('network_rewriter', 'udp_dst', 'identity')))
+
+
+class HeaderPayloadClassifier(ClickBlock):
+    __config_mapping__ = {}
+
+    # Fake attributes used by other API functions
+    __elements__ = (dict(name='counter', type='MultiCounter', config={}),
+                    dict(name='classifier', type='Classifier', config=dict(pattern=[])),
+                    dict(name='regex_classifier', type='RegexClassifier', config=dict(pattern=[]))
+                    )
+    __input__ = 'classifier'
+    __output__ = 'counter'
+    __read_mapping__ = dict(
+        count=('counter', 'count', 'identity'),
+        byte_count=('counter', 'byte_count', transformations.identity),
+        rate=('counter', 'rate', 'identity'),
+        byte_rate=('counter', 'byte_rate', transformations.identity),
+    )
+    __write_mapping__ = dict(reset_counts=('counter', 'reset_counts', 'identity'))
+
+    _MULTICOUNTER = 'counter'
+    _REGEX_CLASSIFIER = 'regex_classifier_{num}'
+    _CLASSIFIER = 'classifier'
+
+    def __init__(self, open_box_block):
+        super(HeaderPayloadClassifier, self).__init__(open_box_block)
+        self._elements = []
+        self._connections = []
+
+    def elements(self):
+        if not self._elements:
+            self._compile_block()
+        return self._elements
+
+    def connections(self):
+        if not self._connections:
+            self._compile_block()
+        return self._connections
+
+    def _compile_block(self):
+        matches = self._get_matches_from_block()
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name(self._MULTICOUNTER),
+                                                     type='MultiCounter', config={})))
+        pattern_number = 0
         patterns = []
-        cluases = []
-        if 'ETH_SRC' in match:
-            cluases.append(MacMatchField(match['ETH_SRC']).to_classifier_clause(0))
-        if 'ETH_DST' in match:
-            cluases.append(MacMatchField(match['ETH_DST']).to_classifier_clause(6))
-        if 'VLAN_VID' in match or 'VLAN_PCP' in match:
-            cluases.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            if 'VLAN_VID' in match:
-                cluases.append(BitsIntMatchField(match['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
-            if 'VLAN_PCP' in match:
-                cluases.append(BitsIntMatchField(match['VLAN_PCP'], bytes=1, bits=3, shift=5).to_classifier_clause(14))
-            return self._compile_above_eth_type(match, cluases[:], 16)
-        else:
-            patterns.extend(self._compile_above_eth_type(match, cluases[:], 12))
-            cluases_with_vlan = cluases[:]
-            cluases_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            patterns.extend(self._compile_above_eth_type(match, cluases_with_vlan[:], 16))
+        for i, match in enumerate(matches):
+            match_patterns = match.header_match.to_patterns()
+            self._create_regex_classifier_element_for_match(match, i)
+            for _ in match_patterns:
+                self._create_content_classifier_to_regex_classifier_connection(pattern_number, i)
+                pattern_number += 1
+            patterns.extend(match_patterns)
+            self._create_regex_classifier_to_counter_connections(match, i)
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name(self._CLASSIFIER),
+                                                     type='Classifier',
+                                                     config=dict(pattern=patterns))))
 
-        return patterns
+    def _get_matches_from_block(self):
+        matches = [CompoundMatch.from_config_dict(match, i) for i, match in enumerate(self._block.match)]
+        # keep expanding and combining rules until there are no more options
+        previous_size = 0
+        while previous_size < len(matches):
+            previous_size = len(matches)
+            matches = self._expand_matches(matches)
+        return matches
 
-    def _compile_above_eth_type(self, match, cluases, eth_type_offset):
-        ip_offset = eth_type_offset + 2
-        if 'ETH_TYPE' in match:
-            cluases.append(IntMatchField(match['ETH_TYPE'], 2).to_classifier_clause(eth_type_offset))
-        if 'IPV4_PROTO' in match:
-            cluases.append(IntMatchField(match['IPV4_PROTO'], 1).to_classifier_clause(ip_offset + 9))
-        if 'IPV4_SRC' in match:
-            cluases.append(Ipv4MatchField(match['IPV4_SRC']).to_classifier_clause(ip_offset + 12))
-        if 'IPV4_DST' in match:
-            cluases.append(Ipv4MatchField(match['IPV4_DST']).to_classifier_clause(ip_offset + 16))
+    def _expand_matches(self, matches):
+        expanded_matches = []
+        expanded_matches_set = set(matches)
 
-        # currently we don't support IP options
-        if 'TCP_SRC' in match or 'TCP_DST' in match or 'UDP_SRC' in match or 'UDP_DST' in match:
-            cluases.append(BitsIntMatchField(str(5), bytes=1, bits=4).to_classifier_clause(ip_offset))
+        # for each match check if it can be combined with lower ranked match,
+        # insert the combined match in front of this match.
+        # We always add the original rule after all the combined matches that include this match
+        for i, this in enumerate(matches, 1):
+            for other in matches[i:]:
+                if this.is_combinable(other):
+                    combined = this.combine(other)
+                    if combined not in expanded_matches_set:
+                        expanded_matches.append(combined)
+                        expanded_matches_set.add(combined)
+            expanded_matches.append(this)
+        return expanded_matches
 
-        payload_offset = ip_offset + 20
+    def _create_regex_classifier_element_for_match(self, match, match_number):
+        patterns = []
+        for original_match_number in sorted(match.payload_matches):
+            patterns.extend(match.payload_matches[original_match_number])
+        self._elements.append(
+            Element.from_dict(dict(name=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                                   type='RegexClassifier', config=dict(pattern=patterns))))
 
-        if 'TCP_SRC' in match:
-            cluases.append(IntMatchField(match['TCP_SRC'], 2).to_classifier_clause(payload_offset))
-        if 'TCP_DST' in match:
-            cluases.append(IntMatchField(match['TCP_DST'], 2).to_classifier_clause(payload_offset + 2))
-        if 'UDP_SRC' in match:
-            cluases.append(IntMatchField(match['UDP_SRC'], 2).to_classifier_clause(payload_offset))
-        if 'UDP_DST' in match:
-            cluases.append(IntMatchField(match['UDP_DST'], 2).to_classifier_clause(payload_offset + 2))
+    def _create_content_classifier_to_regex_classifier_connection(self, pattern_number, match_number):
+        self._connections.append(
+            Connection(src=self._to_external_element_name(self._CLASSIFIER),
+                       dst=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                       src_port=pattern_number, dst_port=0))
 
-        if cluases:
-            return [' '.join(cluases)]
-        else:
-            return ['-']
+    def _create_regex_classifier_to_counter_connections(self, match, match_number):
+        pattern_number = 0
+        for original_match_number in sorted(match.payload_matches):
+            for _ in match.payload_matches[original_match_number]:
+                self._connections.append(Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                                                    dst=self._to_external_element_name(self._MULTICOUNTER),
+                                                    src_port=pattern_number, dst_port=original_match_number))
+                pattern_number += 1
+
+
+obb = OpenBoxBlock.from_dict(dict(type='HeaderClassifier', name='asfd',
+                                  config=dict(match=[
+                                      dict(ETH_SRC="00:11:22:33:44:55", ETH_TYPE=0x800, IPV4_SRC="1.1.1.1"),
+                                      dict(ETH_DST="aa:bb:cc:dd:ee:ff", ETH_TYPE=0x800, IPV4_DST="3.3.3.3"),
+                                  ])))
+
+cb = ClickBlock.from_open_box_block(obb)
+for e in cb.elements():
+    print e
+
+for c in cb.connections():
+    print c

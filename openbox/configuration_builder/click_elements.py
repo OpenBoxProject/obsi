@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 from configuration_builder_exceptions import ClickElementConfigurationError
 
 
@@ -25,7 +32,7 @@ class Argument(object):
         """
         if isinstance(value, bool):
             return str(value).lower()
-        return value
+        return str(value)
 
     def __eq__(self, other):
         return isinstance(other, self.__class__) and self.__dict__ == other.__dict__
@@ -60,7 +67,7 @@ class KeywordArgument(Argument):
     """
 
     def to_click_argument(self, value):
-        if value:
+        if value is not None:
             value = super(KeywordArgument, self).to_click_argument(value)
             return '{name} {value}'.format(name=self.name.upper(), value=value)
         else:
@@ -166,13 +173,13 @@ class Element(object):
                 config_args.append(arg.to_click_argument(arg_value))
             for arg in self.__optional_positional_arguments__:
                 arg_value = getattr(self, arg.name, None)
-                if arg_value:
+                if arg_value is not None:
                     config_args.append(arg.to_click_argument(arg_value))
 
         # keywords argument can always be present
         for arg in self.__keyword_arguments__:
             arg_value = getattr(self, arg.name, None)
-            if arg_value:
+            if arg_value is not None:
                 config_args.append(arg.to_click_argument(arg_value))
 
         args = ', '.join(config_args)
@@ -194,6 +201,8 @@ class Element(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __str__(self):
+        return self.to_click_config()
 
 def build_element(name, list_argument=None, mandatory_positional=None, optional_positional=None, keywords=None,
                   read_handlers=None, write_handlers=None):
@@ -316,6 +325,8 @@ Discard = build_element('Discard',
                         read_handlers=['count', 'active'],
                         write_handlers=['reset_counts'])
 
+AutoMarkIPHeader = build_element('AutoMarkIPHeader')
+
 ToDump = build_element('ToDump',
                        mandatory_positional=[
                            MandatoryPositionalArgument('filename')
@@ -353,3 +364,100 @@ IPClassifier = build_element('IPClassifier',
                              read_handlers=['program', 'pattern$i'],
                              write_handlers=['pattern$i']
                              )
+
+RegexMatcher = build_element("RegexMatcher",
+                             list_argument=ListArguments('pattern'),
+                             keywords=[
+                                 KeywordArgument('payload_only'),
+                                 KeywordArgument('match_all'),
+                             ],
+                             read_handlers=['payload_only', 'match_all', 'pattern$i'],
+                             write_handlers=['payload_only', 'match_all', 'pattern$i'])
+
+RegexClassifier = build_element("RegexClassifier",
+                                list_argument=ListArguments('pattern'),
+                                keywords=[KeywordArgument('payload_only')],
+                                read_handlers=['payload_only', 'pattern$i'],
+                                write_handlers=['payload_only', 'pattern$i'])
+
+VLANDecap = build_element('VLANDecap',
+                          keywords=[KeywordArgument('anno')])
+
+VLANEncap = build_element('VLANEncap',
+                          mandatory_positional=[
+                              MandatoryPositionalArgument('vlan_tci'),
+                              MandatoryPositionalArgument('vlan_pcp'),
+                          ],
+                          keywords=[
+                              KeywordArgument('vlan_id'),
+                              KeywordArgument('native_vlan'),
+                              KeywordArgument('ethertype'),
+                          ],
+                          read_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
+                          write_handlers=['vlan_tci', 'vlan_pcp', 'vlan_id', 'native_vlan', 'ethertype'],
+                          )
+
+DecIPTTL = build_element('DecIPTTL',
+                         keywords=[KeywordArgument('active'), KeywordArgument('multicast')],
+                         read_handlers=['active', 'multicast'],
+                         write_handlers=['active', 'multicast'])
+
+IPRewriter = build_element('IPRewriter',
+                           list_argument=ListArguments('input_spec'),
+                           keywords=[
+                               KeywordArgument('tcp_timeout'),
+                               KeywordArgument('tcp_done_timeout'),
+                               KeywordArgument('tcp_nodata_timeout'),
+                               KeywordArgument('tcp_guarantee'),
+                               KeywordArgument('udp_timeout'),
+                               KeywordArgument('udp_streaming_timeout'),
+                               KeywordArgument('udp_guarantee'),
+                               KeywordArgument('reap_interval'),
+                               KeywordArgument('mapping_capacity'),
+                               KeywordArgument('dst_anno'),
+                           ],
+                           read_handlers=['nmappings', 'mapping_failures', 'length', 'capacity', 'tcp_mappings',
+                                          'udp_mappings'],
+                           write_handlers=['capacity']
+                           )
+
+Queue = build_element('Queue',
+                      optional_positional=[OptionalPositionalArgument('capacity')],
+                      read_handlers=['length', 'highwater_length', 'capacity', 'drops'],
+                      write_handlers=['reset_counts', 'reset']
+                      )
+
+NetworkDirectionSwap = build_element('NetworkDirectionSwap',
+                                     keywords=[
+                                         KeywordArgument('ethernet'),
+                                         KeywordArgument('ipv4'),
+                                         KeywordArgument('ipv6'),
+                                         KeywordArgument('tcp'),
+                                         KeywordArgument('udp'),
+                                     ],
+                                     read_handlers=['ethernet', 'ipv4', 'ipv6', 'tcp', 'udp'],
+                                     write_handlers=['ethernet', 'ipv4', 'ipv6', 'tcp', 'udp'])
+
+NetworkHeaderFieldsRewriter = build_element('NetworkHeaderFieldsRewriter',
+                                            keywords=[
+                                                KeywordArgument('eth_src'),
+                                                KeywordArgument('eth_dst'),
+                                                KeywordArgument('eth_type'),
+                                                KeywordArgument('ipv4_proto'),
+                                                KeywordArgument('ipv4_src'),
+                                                KeywordArgument('ipv4_dst'),
+                                                KeywordArgument('ipv4_dscp'),
+                                                KeywordArgument('ipv4_ecn'),
+                                                KeywordArgument('ipv4_ttl'),
+                                                KeywordArgument('tcp_src'),
+                                                KeywordArgument('tcp_dst'),
+                                                KeywordArgument('udp_src'),
+                                                KeywordArgument('udp_dst'),
+                                            ],
+                                            read_handlers=['eth_src', 'eth_dst', 'eth_type',
+                                                           'ipv4_proto', 'ipv4_src', 'ipv4_dst', 'ipv4_ecn', 'ipv4dsvp',
+                                                           'ipv4_ttl', 'tcp_src', 'tcp_dst', 'udp_src', 'udp_dst'],
+                                            write_handlers=['eth_src', 'eth_dst', 'eth_type',
+                                                            'ipv4_proto', 'ipv4_src', 'ipv4_dst', 'ipv4_ecn',
+                                                            'ipv4dsvp', 'ipv4_ttl', 'tcp_src', 'tcp_dst', 'udp_src',
+                                                            'udp_dst'])

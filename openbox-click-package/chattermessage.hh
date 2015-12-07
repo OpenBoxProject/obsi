@@ -29,8 +29,6 @@ Boolean. Will send chatter messages only if ACTIVE is true.
 Text word. Send messages to this chatter CHANNEL. Default
 is the default channel, which corresponds to C<click_chatter()>.
 
- 
-=item 
 =back
 =e
 

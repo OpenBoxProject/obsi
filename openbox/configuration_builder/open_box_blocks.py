@@ -1,5 +1,14 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
+
 import json
 import capabilities
+import re
 from collections import OrderedDict
 from configuration_builder_exceptions import OpenBoxBlockConfigurationError
 
@@ -12,11 +21,23 @@ class FieldType:
     NULL = 'null'
     OBJECT = 'object'
     STRING = 'string'
+    MAC_ADDRESS = 'mac_address'
+    IPV4_ADDRESS = 'ipv4_address'
     MATCH_PATTERNS = 'match_patterns'
+    COMPOUND_MATCHES = 'compound_matches'
+    IPV4_TRANSLATION_RULES = 'ipv4_translator_rules'
 
 
 class ConfigField(object):
     _SUPPORTED_MATCH_FIELDS = set(capabilities.SUPPORTED_MATCH_FIELDS)
+    _TRANSLATION_RULES_REGEX = [re.compile(r'(drop|discard)'),
+                                re.compile(r'pass \d+'),
+                                re.compile(r'keep \d+ \d+'),
+                                re.compile(
+                                    r"pattern ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ \d+ \d+")]
+    _MAC_ADDRESS = re.compile(r"^([0-9A-Fa-f]{2}:){5}([0-9A-Fa-f]{2})$")
+    _IPV4_ADDRESS = re.compile(
+        r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
 
     def __init__(self, name, required, type, description=None):
         self.name = name
@@ -42,9 +63,25 @@ class ConfigField(object):
         elif self.type == FieldType.MATCH_PATTERNS:
             return (isinstance(value, (tuple, list)) and
                     all(self._is_valid_match_pattern(pattern) for pattern in value))
+        elif self.type == FieldType.IPV4_TRANSLATION_RULES:
+            return (isinstance(value, (tuple, list)) and
+                    all(self._is_valid_ipv4_translation_rule(input_spec) for input_spec in value))
+        elif self.type == FieldType.MAC_ADDRESS:
+            return isinstance(value, str) and self._is_valid_mac_address(value)
+        elif self.type == FieldType.IPV4_ADDRESS:
+            return isinstance(value, str) and self._is_valid_ipv4_address(value)
+        elif self.type == FieldType.COMPOUND_MATCHES:
+            return (isinstance(value, (tuple, list)) and
+                    all(self._is_valid_compound_match(match) for match in value))
 
     def _is_valid_match_pattern(self, pattern):
         return isinstance(pattern, dict) and all(field in self._SUPPORTED_MATCH_FIELDS for field in pattern)
+
+    def _is_valid_ipv4_translation_rule(self, rule):
+        for regex in self._TRANSLATION_RULES_REGEX:
+            if regex.match(rule):
+                return True
+        return False
 
     def to_dict(self):
         result = OrderedDict()
@@ -53,6 +90,31 @@ class ConfigField(object):
         result['type'] = self.type
         result['description'] = self.description
         return result
+
+    def _is_valid_mac_address(self, value):
+        return self._MAC_ADDRESS.match(value) is not None
+
+    def _is_valid_ipv4_address(self, value):
+        return self._IPV4_ADDRESS.match(value) is not None
+
+    def _is_valid_compound_match(self, match):
+        try:
+            return (match['type'] == 'HeaderPayloadMatch' and
+                    self._is_valid_match_pattern(match['header_match']) and
+                    self._is_valid_payload_match(match['payload_match']))
+        except KeyError:
+            return False
+
+    def _is_valid_payload_match(self, match):
+        return (isinstance(match, (tuple, list)) and
+                all(self._is_valid_payload_pattern(pattern) for pattern in match))
+
+    def _is_valid_payload_pattern(self, pattern):
+        try:
+            return (pattern['type'] == 'PayloadPattern' and
+                    isinstance(pattern['pattern'], (str, unicode)))
+        except KeyError:
+            return False
 
 
 class HandlerField(object):
@@ -96,12 +158,12 @@ class OpenBoxBlock(object):
             try:
                 value = kwargs[field.name]
                 if not field.validate_value_type(value):
-                    raise TypeError("Field {field} is not a valid {rtype}".format(field=field.name,
-                                                                                  rtype=field.type))
+                    raise TypeError("Field '{field}' is not a valid '{rtype}'".format(field=field.name,
+                                                                                      rtype=field.type))
                 setattr(self, field.name, value)
             except KeyError:
                 if field.required:
-                    raise ValueError("Required field {field} not given".format(field=field.name))
+                    raise ValueError("Required field '{field}' not given".format(field=field.name))
 
     @classmethod
     def from_dict(cls, config):
@@ -142,7 +204,7 @@ class OpenBoxBlock(object):
         config = dict()
         for field in self.__fields__:
             value = getattr(self, field.name, None)
-            if value:
+            if value is not None:
                 config[field.name] = value
         result['config'] = config
         return result
@@ -215,7 +277,7 @@ FromDevice = build_open_box_block('FromDevice',
                                       HandlerField('drops', FieldType.STRING),
                                   ],
                                   write_handlers=[
-                                      HandlerField('reset_count', FieldType.NULL)
+                                      HandlerField('reset_counts', FieldType.NULL)
                                   ])
 
 FromDump = build_open_box_block('FromDump',
@@ -232,7 +294,7 @@ FromDump = build_open_box_block('FromDump',
                                     HandlerField('drops', FieldType.STRING),
                                 ],
                                 write_handlers=[
-                                    HandlerField('reset_count', FieldType.NULL),
+                                    HandlerField('reset_counts', FieldType.NULL),
                                     HandlerField('active', FieldType.BOOLEAN)
                                 ])
 
@@ -247,17 +309,13 @@ Discard = build_open_box_block('Discard',
                                    HandlerField('drops', FieldType.STRING),
                                ],
                                write_handlers=[
-                                   HandlerField('reset_count', FieldType.NULL),
+                                   HandlerField('reset_counts', FieldType.NULL),
                                    HandlerField('active', FieldType.BOOLEAN)
                                ])
 
 ToDump = build_open_box_block('ToDump',
                               config_fields=[
                                   ConfigField('filename', True, FieldType.STRING),
-                              ],
-                              read_handlers=[
-                              ],
-                              write_handlers=[
                               ])
 
 Log = build_open_box_block('Log',
@@ -295,7 +353,7 @@ ContentClassifier = build_open_box_block('ContentClassifier',
                                              HandlerField('byte_rate', FieldType.NUMBER),
                                          ],
                                          write_handlers=[
-                                             HandlerField('reset_count', FieldType.NULL)
+                                             HandlerField('reset_counts', FieldType.NULL)
                                          ])
 
 HeaderClassifier = build_open_box_block('HeaderClassifier',
@@ -309,5 +367,208 @@ HeaderClassifier = build_open_box_block('HeaderClassifier',
                                             HandlerField('byte_rate', FieldType.NUMBER),
                                         ],
                                         write_handlers=[
-                                            HandlerField('reset_count', FieldType.NULL)
+                                            HandlerField('reset_counts', FieldType.NULL)
                                         ])
+
+RegexMatcher = build_open_box_block('RegexMatcher',
+                                    config_fields=[
+                                        ConfigField('pattern', True, FieldType.ARRAY),
+                                        ConfigField('payload_only', False, FieldType.BOOLEAN),
+                                        ConfigField('match_all', False, FieldType.BOOLEAN)
+                                    ],
+                                    read_handlers=[
+                                        HandlerField('count', FieldType.INTEGER),
+                                        HandlerField('byte_count', FieldType.INTEGER),
+                                        HandlerField('rate', FieldType.NUMBER),
+                                        HandlerField('byte_rate', FieldType.NUMBER),
+                                        HandlerField('payload_only', FieldType.BOOLEAN),
+                                        HandlerField('match_all', FieldType.BOOLEAN),
+                                    ],
+                                    write_handlers=[
+                                        HandlerField('reset_counts', FieldType.NULL),
+                                        HandlerField('payload_only', FieldType.BOOLEAN),
+                                        HandlerField('match_all', FieldType.BOOLEAN),
+                                    ]
+                                    )
+
+RegexClassifier = build_open_box_block('RegexClassifier',
+                                       config_fields=[
+                                           ConfigField('pattern', True, FieldType.ARRAY),
+                                           ConfigField('payload_only', False, FieldType.BOOLEAN),
+                                       ],
+                                       read_handlers=[
+                                           HandlerField('count', FieldType.INTEGER),
+                                           HandlerField('byte_count', FieldType.INTEGER),
+                                           HandlerField('rate', FieldType.NUMBER),
+                                           HandlerField('byte_rate', FieldType.NUMBER),
+                                           HandlerField('payload_only', FieldType.BOOLEAN),
+                                       ],
+                                       write_handlers=[
+                                           HandlerField('reset_counts', FieldType.NULL),
+                                           HandlerField('payload_only', FieldType.BOOLEAN),
+                                       ]
+                                       )
+
+VlanDecapsulate = build_open_box_block('VlanDecapsulate')
+
+VlanEncapsulate = build_open_box_block('VlanEncapsulate',
+                                       config_fields=[
+                                           ConfigField('vlan_vid', True, FieldType.INTEGER),
+                                           ConfigField('vlan_dei', False, FieldType.INTEGER),
+                                           ConfigField('vlan_pcp', False, FieldType.INTEGER),
+                                           ConfigField('ethertype', False, FieldType.INTEGER),
+                                       ],
+                                       read_handlers=[
+                                           HandlerField('vlan_vid', FieldType.INTEGER),
+                                           HandlerField('vlan_dei', FieldType.INTEGER),
+                                           HandlerField('vlan_pcp', FieldType.INTEGER),
+                                           HandlerField('vlan_tci', FieldType.INTEGER),
+                                           HandlerField('ethertype', FieldType.INTEGER),
+                                       ],
+                                       write_handlers=[
+                                           HandlerField('vlan_vid', FieldType.INTEGER),
+                                           HandlerField('vlan_dei', FieldType.INTEGER),
+                                           HandlerField('vlan_pcp', FieldType.INTEGER),
+                                           HandlerField('vlan_tci', FieldType.INTEGER),
+                                           HandlerField('ethertype', FieldType.INTEGER),
+                                       ])
+
+DecIpTtl = build_open_box_block('DecIpTtl',
+                                config_fields=[
+                                    ConfigField('active', False, FieldType.BOOLEAN),
+                                ],
+                                read_handlers=[
+                                    HandlerField('count', FieldType.INTEGER),
+                                    HandlerField('byte_count', FieldType.INTEGER),
+                                    HandlerField('rate', FieldType.NUMBER),
+                                    HandlerField('byte_rate', FieldType.NUMBER),
+                                    HandlerField('active', FieldType.BOOLEAN),
+                                ],
+                                write_handlers=[
+                                    HandlerField('reset_counts', FieldType.NULL),
+                                    HandlerField('active', FieldType.BOOLEAN),
+                                ])
+
+Ipv4AddressTranslator = build_open_box_block('Ipv4AddressTranslator',
+                                             config_fields=[
+                                                 ConfigField('input_spec', True, FieldType.IPV4_TRANSLATION_RULES),
+                                                 ConfigField('tcp_done_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('tcp_nodata_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('tcp_guarantee', False, FieldType.INTEGER),
+                                                 ConfigField('udp_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('udp_streaming_timeout', False, FieldType.INTEGER),
+                                                 ConfigField('udp_guarantee', False, FieldType.INTEGER),
+                                                 ConfigField('reap_interval', False, FieldType.INTEGER),
+                                                 ConfigField('mapping_capacity', False, FieldType.INTEGER)
+                                             ],
+                                             read_handlers=[
+                                                 HandlerField('mapping_count', FieldType.INTEGER),
+                                                 HandlerField('mapping_failures', FieldType.INTEGER),
+                                                 HandlerField('length', FieldType.INTEGER),
+                                                 HandlerField('capacity', FieldType.INTEGER),
+                                                 HandlerField('tcp_mapping', FieldType.STRING),
+                                                 HandlerField('udp_mapping', FieldType.STRING),
+                                             ],
+                                             write_handlers=[
+                                                 HandlerField('capacity', FieldType.INTEGER)
+                                             ])
+
+Queue = build_open_box_block('Queue',
+                             config_fields=[
+                                 ConfigField('capacity', False, FieldType.INTEGER),
+                             ],
+                             read_handlers=[
+                                 HandlerField('length', FieldType.INTEGER),
+                                 HandlerField('highwater_length', FieldType.INTEGER),
+                                 HandlerField('drops', FieldType.INTEGER),
+                                 HandlerField('capacity', FieldType.INTEGER),
+                             ],
+                             write_handlers=[
+                                 HandlerField('reset_counts', FieldType.INTEGER),
+                                 HandlerField('reset', FieldType.INTEGER)
+                             ]
+                             )
+
+NetworkDirectionSwap = build_open_box_block('NetworkDirectionSwap',
+                                            config_fields=[
+                                                ConfigField('ethernet', False, FieldType.BOOLEAN),
+                                                ConfigField('ipv4', False, FieldType.BOOLEAN),
+                                                ConfigField('ipv6', False, FieldType.BOOLEAN),
+                                                ConfigField('tcp', False, FieldType.BOOLEAN),
+                                                ConfigField('udp', False, FieldType.BOOLEAN),
+                                            ],
+                                            read_handlers=[
+                                                HandlerField('ethernet', FieldType.BOOLEAN),
+                                                HandlerField('ipv4', FieldType.BOOLEAN),
+                                                HandlerField('ipv6', FieldType.BOOLEAN),
+                                                HandlerField('tcp', FieldType.BOOLEAN),
+                                                HandlerField('udp', FieldType.BOOLEAN),
+                                            ],
+                                            write_handlers=[
+                                                HandlerField('ethernet', FieldType.BOOLEAN),
+                                                HandlerField('ipv4', FieldType.BOOLEAN),
+                                                HandlerField('ipv6', FieldType.BOOLEAN),
+                                                HandlerField('tcp', FieldType.BOOLEAN),
+                                                HandlerField('udp', FieldType.BOOLEAN),
+                                            ])
+
+NetworkHeaderFieldsRewriter = build_open_box_block('NetworkHeaderFieldsRewriter',
+                                                   config_fields=[
+                                                       ConfigField('eth_src', False, FieldType.MAC_ADDRESS),
+                                                       ConfigField('eth_dst', False, FieldType.MAC_ADDRESS),
+                                                       ConfigField('eth_type', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_proto', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_dscp', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_ecn', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_ttl', False, FieldType.INTEGER),
+                                                       ConfigField('ipv4_src', False, FieldType.IPV4_ADDRESS),
+                                                       ConfigField('ipv4_dst', False, FieldType.IPV4_ADDRESS),
+                                                       ConfigField('tcp_src', False, FieldType.INTEGER),
+                                                       ConfigField('tcp_dst', False, FieldType.INTEGER),
+                                                       ConfigField('udp_src', False, FieldType.INTEGER),
+                                                       ConfigField('udp_dst', False, FieldType.INTEGER),
+                                                   ],
+                                                   read_handlers=[
+                                                       HandlerField('eth_src', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_dst', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_type', FieldType.INTEGER),
+                                                       HandlerField('ipv4_proto', FieldType.INTEGER),
+                                                       HandlerField('ipv4_dscp', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ecn', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ttl', FieldType.INTEGER),
+                                                       HandlerField('ipv4_src', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('ipv4_dst', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('tcp_src', FieldType.INTEGER),
+                                                       HandlerField('tcp_dst', FieldType.INTEGER),
+                                                       HandlerField('udp_src', FieldType.INTEGER),
+                                                       HandlerField('udp_dst', FieldType.INTEGER)
+                                                   ],
+                                                   write_handlers=[
+                                                       HandlerField('eth_src', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_dst', FieldType.MAC_ADDRESS),
+                                                       HandlerField('eth_type', FieldType.INTEGER),
+                                                       HandlerField('ipv4_proto', FieldType.INTEGER),
+                                                       HandlerField('ipv4_dscp', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ecn', FieldType.INTEGER),
+                                                       HandlerField('ipv4_ttl', FieldType.INTEGER),
+                                                       HandlerField('ipv4_src', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('ipv4_dst', FieldType.IPV4_ADDRESS),
+                                                       HandlerField('tcp_src', FieldType.INTEGER),
+                                                       HandlerField('tcp_dst', FieldType.INTEGER),
+                                                       HandlerField('udp_src', FieldType.INTEGER),
+                                                       HandlerField('udp_dst', FieldType.INTEGER)
+                                                   ])
+
+HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
+                                               config_fields=[
+                                                   ConfigField('match', True, FieldType.COMPOUND_MATCHES)
+                                               ],
+                                               read_handlers=[
+                                                   HandlerField('count', FieldType.INTEGER),
+                                                   HandlerField('byte_count', FieldType.INTEGER),
+                                                   HandlerField('rate', FieldType.NUMBER),
+                                                   HandlerField('byte_rate', FieldType.NUMBER),
+                                               ],
+                                               write_handlers=[
+                                                   HandlerField('reset_counts', FieldType.NULL)
+                                               ])

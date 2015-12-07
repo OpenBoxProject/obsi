@@ -1,6 +1,14 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 """
 Transforms an OpenBox configuration in to a Click's configuration
 """
+import capabilities
 from click_blocks import ClickBlock
 from click_configuration import ClickConfiguration
 from connection import Connection
@@ -36,11 +44,15 @@ class ClickConfigurationBuilder(object):
 
     @staticmethod
     def supported_match_fields():
-        return []
+        return capabilities.SUPPORTED_MATCH_FIELDS
+
+    @staticmethod
+    def supported_complex_match():
+        return capabilities.SUPPORTED_COMPLEX_MATCH
 
     @staticmethod
     def supported_protocol_analyser_protocols():
-        return []
+        return capabilities.SUPPORTED_PROTOCOLS
 
     @classmethod
     def from_open_box_configuration(cls, config):

@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+SUPPORTED_COMPLEX_MATCH = 'basic'
 SUPPORTED_MATCH_FIELDS = ['ETH_SRC', 'ETH_DST', 'ETH_TYPE',
                           'VLAN_VID', 'VLAN_PCP',
                           'IPV4_PROTO', 'IPV4_SRC', 'IPV4_DST',

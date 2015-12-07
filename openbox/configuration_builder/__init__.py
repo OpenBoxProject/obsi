@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
 """
 Build an execution engine configuration from an open box configuration
 """
@@ -28,5 +34,8 @@ class ConfigurationBuilder(object):
 
     def supported_protocol_analyser_protocols(self):
         return self.engine_builder.supported_protocol_analyser_protocols()
+
+    def supported_complex_match(self):
+        return self.engine_builder.supported_complex_match()
 
 

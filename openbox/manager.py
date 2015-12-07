@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
+
 """
 An OBSI's Manager.
 """
@@ -312,7 +319,7 @@ class Manager(object):
         processing_blocks = self.config_builder.supported_blocks_from_supported_engine_elements_types(
             self._supported_elements_types)
         match_fields = self.config_builder.supported_match_fields()
-        complex_match = config.Engine.Capabilities.COMPLEX_MATCH
+        complex_match = self.config_builder.supported_complex_match()
         protocol_analyser_protocols = self.config_builder.supported_protocol_analyser_protocols()
 
         return dict(proto_messages=proto_messages, processing_blocks=processing_blocks,

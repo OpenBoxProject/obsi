@@ -1,6 +1,11 @@
-import logging
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 from tornado.ioloop import PeriodicCallback
-from tornado.log import app_log
 
 
 class ProcessWatchdog(object):

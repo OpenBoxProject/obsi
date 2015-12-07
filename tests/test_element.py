@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 import unittest
 import configuration_builder.click_elements as elements
 from configuration_builder.configuration_builder_exceptions import ClickElementConfigurationError

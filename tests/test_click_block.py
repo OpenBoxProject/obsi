@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+#
+# Copyright (c) 2015 Pavel Lazar pavel.lazar (at) gmail.com
+#
+# The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
+#####################################################################
+
 import unittest
 from configuration_builder.open_box_blocks import OpenBoxBlock
 from configuration_builder.click_blocks import ClickBlock
