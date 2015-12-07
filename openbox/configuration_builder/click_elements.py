@@ -201,6 +201,8 @@ class Element(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+    def __str__(self):
+        return self.to_click_config()
 
 def build_element(name, list_argument=None, mandatory_positional=None, optional_positional=None, keywords=None,
                   read_handlers=None, write_handlers=None):

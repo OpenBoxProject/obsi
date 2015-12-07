@@ -10,7 +10,7 @@ import re
 import json
 import sys
 import transformations
-from matching_fields import IntMatchField, Ipv4MatchField, BitsIntMatchField, MacMatchField
+from matching import IntMatchField, Ipv4MatchField, BitsIntMatchField, MacMatchField, CompoundMatch
 from configuration_builder_exceptions import ClickBlockConfigurationError, ConnectionConfigurationError
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection, MultiConnection
@@ -765,6 +765,7 @@ NetworkDirectionSwap = build_click_block('NetworkDirectionSwap',
                                              udp=('network_direction_swap', 'udp', 'identity'),
                                          )
                                          )
+
 NetworkHeaderFieldsRewriter = build_click_block('NetworkHeaderFieldsRewriter',
                                                 config_mapping=dict(eth_src=_no_transform('eth_src'),
                                                                     eth_dst=_no_transform('eth_dst'),
@@ -826,3 +827,106 @@ NetworkHeaderFieldsRewriter = build_click_block('NetworkHeaderFieldsRewriter',
                                                     udp_dst=('network_rewriter', 'udp_dst', 'identity')))
 
 
+class HeaderPayloadClassifier(ClickBlock):
+    __config_mapping__ = {}
+
+    # Fake attributes used by other API functions
+    __elements__ = (dict(name='counter', type='MultiCounter', config={}),
+                    dict(name='classifier', type='Classifier', config=dict(pattern=[])),
+                    dict(name='regex_classifier', type='RegexClassifier', config=dict(pattern=[]))
+                    )
+    __input__ = 'classifier'
+    __output__ = 'counter'
+    __read_mapping__ = dict(
+        count=('counter', 'count', 'identity'),
+        byte_count=('counter', 'byte_count', transformations.identity),
+        rate=('counter', 'rate', 'identity'),
+        byte_rate=('counter', 'byte_rate', transformations.identity),
+    )
+    __write_mapping__ = dict(reset_counts=('counter', 'reset_counts', 'identity'))
+
+    _MULTICOUNTER = 'counter'
+    _REGEX_CLASSIFIER = 'regex_classifier_{num}'
+    _CLASSIFIER = 'classifier'
+
+    def __init__(self, open_box_block):
+        super(HeaderPayloadClassifier, self).__init__(open_box_block)
+        self._elements = []
+        self._connections = []
+
+    def elements(self):
+        if not self._elements:
+            self._compile_block()
+        return self._elements
+
+    def connections(self):
+        if not self._connections:
+            self._compile_block()
+        return self._connections
+
+    def _compile_block(self):
+        matches = self._get_matches_from_block()
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name(self._MULTICOUNTER),
+                                                     type='MultiCounter', config={})))
+        pattern_number = 0
+        patterns = []
+        for i, match in enumerate(matches):
+            match_patterns = match.header_match.to_patterns()
+            self._create_regex_classifier_element_for_match(match, i)
+            for _ in match_patterns:
+                self._create_content_classifier_to_regex_classifier_connection(pattern_number, i)
+                pattern_number += 1
+            patterns.extend(match_patterns)
+            self._create_regex_classifier_to_counter_connections(match, i)
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name(self._CLASSIFIER),
+                                                     type='Classifier',
+                                                     config=dict(pattern=patterns))))
+
+    def _get_matches_from_block(self):
+        matches = [CompoundMatch.from_config_dict(match, i) for i, match in enumerate(self._block.match)]
+        # keep expanding and combining rules until there are no more options
+        previous_size = 0
+        while previous_size < len(matches):
+            previous_size = len(matches)
+            matches = self._expand_matches(matches)
+        return matches
+
+    def _expand_matches(self, matches):
+        expanded_matches = []
+        expanded_matches_set = set(matches)
+
+        # for each match check if it can be combined with lower ranked match,
+        # insert the combined match in front of this match.
+        # We always add the original rule after all the combined matches that include this match
+        for i, this in enumerate(matches, 1):
+            for other in matches[i:]:
+                if this.is_combinable(other):
+                    combined = this.combine(other)
+                    if combined not in expanded_matches_set:
+                        expanded_matches.append(combined)
+                        expanded_matches_set.add(combined)
+            expanded_matches.append(this)
+        return expanded_matches
+
+    def _create_regex_classifier_element_for_match(self, match, match_number):
+        patterns = []
+        for original_match_number in sorted(match.payload_matches):
+            patterns.extend(match.payload_matches[original_match_number])
+        self._elements.append(
+            Element.from_dict(dict(name=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                                   type='RegexClassifier', config=dict(pattern=patterns))))
+
+    def _create_content_classifier_to_regex_classifier_connection(self, pattern_number, match_number):
+        self._connections.append(
+            Connection(src=self._to_external_element_name(self._CLASSIFIER),
+                       dst=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                       src_port=pattern_number, dst_port=0))
+
+    def _create_regex_classifier_to_counter_connections(self, match, match_number):
+        pattern_number = 0
+        for original_match_number in sorted(match.payload_matches):
+            for _ in match.payload_matches[original_match_number]:
+                self._connections.append(Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                                                    dst=self._to_external_element_name(self._MULTICOUNTER),
+                                                    src_port=pattern_number, dst_port=original_match_number))
+                pattern_number += 1

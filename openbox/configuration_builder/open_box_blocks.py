@@ -24,6 +24,7 @@ class FieldType:
     MAC_ADDRESS = 'mac_address'
     IPV4_ADDRESS = 'ipv4_address'
     MATCH_PATTERNS = 'match_patterns'
+    COMPOUND_MATCHES = 'compound_matches'
     IPV4_TRANSLATION_RULES = 'ipv4_translator_rules'
 
 
@@ -35,7 +36,8 @@ class ConfigField(object):
                                 re.compile(
                                     r"pattern ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ ((?:[0-9]{1,3}\.){3}[0-9]{1,3}|-) [0-9-#?]+ \d+ \d+")]
     _MAC_ADDRESS = re.compile(r"^([0-9A-Fa-f]{2}:){5}([0-9A-Fa-f]{2})$")
-    _IPV4_ADDRESS = re.compile(r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
+    _IPV4_ADDRESS = re.compile(
+        r"(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
 
     def __init__(self, name, required, type, description=None):
         self.name = name
@@ -68,6 +70,9 @@ class ConfigField(object):
             return isinstance(value, str) and self._is_valid_mac_address(value)
         elif self.type == FieldType.IPV4_ADDRESS:
             return isinstance(value, str) and self._is_valid_ipv4_address(value)
+        elif self.type == FieldType.COMPOUND_MATCHES:
+            return (isinstance(value, (tuple, list)) and
+                    all(self._is_valid_compound_match(match) for match in value))
 
     def _is_valid_match_pattern(self, pattern):
         return isinstance(pattern, dict) and all(field in self._SUPPORTED_MATCH_FIELDS for field in pattern)
@@ -91,6 +96,25 @@ class ConfigField(object):
 
     def _is_valid_ipv4_address(self, value):
         return self._IPV4_ADDRESS.match(value) is not None
+
+    def _is_valid_compound_match(self, match):
+        try:
+            return (match['type'] == 'HeaderPayloadMatch' and
+                    self._is_valid_match_pattern(match['header_match']) and
+                    self._is_valid_payload_match(match['payload_match']))
+        except KeyError:
+            return False
+
+    def _is_valid_payload_match(self, match):
+        return (isinstance(match, (tuple, list)) and
+                all(self._is_valid_payload_pattern(pattern) for pattern in match))
+
+    def _is_valid_payload_pattern(self, pattern):
+        try:
+            return (pattern['type'] == 'PayloadPattern' and
+                    isinstance(pattern['pattern'], (str, unicode)))
+        except KeyError:
+            return False
 
 
 class HandlerField(object):
@@ -458,7 +482,7 @@ Queue = build_open_box_block('Queue',
                                  HandlerField('highwater_length', FieldType.INTEGER),
                                  HandlerField('drops', FieldType.INTEGER),
                                  HandlerField('capacity', FieldType.INTEGER),
-                                 ],
+                             ],
                              write_handlers=[
                                  HandlerField('reset_counts', FieldType.INTEGER),
                                  HandlerField('reset', FieldType.INTEGER)
@@ -534,3 +558,17 @@ NetworkHeaderFieldsRewriter = build_open_box_block('NetworkHeaderFieldsRewriter'
                                                        HandlerField('udp_src', FieldType.INTEGER),
                                                        HandlerField('udp_dst', FieldType.INTEGER)
                                                    ])
+
+HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
+                                               config_fields=[
+                                                   ConfigField('match', True, FieldType.COMPOUND_MATCHES)
+                                               ],
+                                               read_handlers=[
+                                                   HandlerField('count', FieldType.INTEGER),
+                                                   HandlerField('byte_count', FieldType.INTEGER),
+                                                   HandlerField('rate', FieldType.NUMBER),
+                                                   HandlerField('byte_rate', FieldType.NUMBER),
+                                               ],
+                                               write_handlers=[
+                                                   HandlerField('reset_counts', FieldType.NULL)
+                                               ])
