@@ -9,8 +9,9 @@ import functools
 import re
 import json
 import sys
+
 import transformations
-from matching import IntMatchField, Ipv4MatchField, BitsIntMatchField, MacMatchField, CompoundMatch
+from matching import CompoundMatch, HeaderMatch
 from configuration_builder_exceptions import ClickBlockConfigurationError, ConnectionConfigurationError
 from click_elements import Element, ClickElementConfigurationError
 from connection import Connection, MultiConnection
@@ -467,6 +468,7 @@ class HeaderClassifier(ClickBlock):
     # Fake attributes used by other API functions
     __elements__ = (dict(name='counter', type='MultiCounter', config={}),
                     dict(name='classifier', type='Classifier', config=dict(pattern=[])))
+
     __input__ = 'classifier'
     __output__ = 'counter'
     __read_mapping__ = dict(
@@ -503,66 +505,14 @@ class HeaderClassifier(ClickBlock):
                                                 self._to_external_element_name('counter'), i, rule_number))
 
     def _compile_match_patterns(self):
+        matches = [HeaderMatch(match) for match in self._block.match]
         patterns = []
         rule_numbers = []
-        for i, match in enumerate(self._block.match):
-            for pattern in self._compile_match_pattern(match):
+        for i, match in enumerate(matches):
+            for pattern in match.to_patterns():
                 patterns.append(pattern)
                 rule_numbers.append(i)
         return patterns, rule_numbers
-
-    def _compile_match_pattern(self, match):
-        patterns = []
-        clauses = []
-        if 'ETH_SRC' in match:
-            clauses.append(MacMatchField(match['ETH_SRC']).to_classifier_clause(0))
-        if 'ETH_DST' in match:
-            clauses.append(MacMatchField(match['ETH_DST']).to_classifier_clause(6))
-        if 'VLAN_VID' in match or 'VLAN_PCP' in match:
-            clauses.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            if 'VLAN_VID' in match:
-                clauses.append(BitsIntMatchField(match['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
-            if 'VLAN_PCP' in match:
-                clauses.append(BitsIntMatchField(match['VLAN_PCP'], bytes=1, bits=3, shift=5).to_classifier_clause(14))
-            return self._compile_above_eth_type(match, clauses[:], 16)
-        else:
-            patterns.extend(self._compile_above_eth_type(match, clauses[:], 12))
-            clauses_with_vlan = clauses[:]
-            clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            patterns.extend(self._compile_above_eth_type(match, clauses_with_vlan[:], 16))
-
-        return patterns
-
-    def _compile_above_eth_type(self, match, clauses, eth_type_offset):
-        ip_offset = eth_type_offset + 2
-        if 'ETH_TYPE' in match:
-            clauses.append(IntMatchField(match['ETH_TYPE'], 2).to_classifier_clause(eth_type_offset))
-        if 'IPV4_PROTO' in match:
-            clauses.append(IntMatchField(match['IPV4_PROTO'], 1).to_classifier_clause(ip_offset + 9))
-        if 'IPV4_SRC' in match:
-            clauses.append(Ipv4MatchField(match['IPV4_SRC']).to_classifier_clause(ip_offset + 12))
-        if 'IPV4_DST' in match:
-            clauses.append(Ipv4MatchField(match['IPV4_DST']).to_classifier_clause(ip_offset + 16))
-
-        # currently we don't support IP options
-        if 'TCP_SRC' in match or 'TCP_DST' in match or 'UDP_SRC' in match or 'UDP_DST' in match:
-            clauses.append(BitsIntMatchField(str(5), bytes=1, bits=4).to_classifier_clause(ip_offset))
-
-        payload_offset = ip_offset + 20
-
-        if 'TCP_SRC' in match:
-            clauses.append(IntMatchField(match['TCP_SRC'], 2).to_classifier_clause(payload_offset))
-        if 'TCP_DST' in match:
-            clauses.append(IntMatchField(match['TCP_DST'], 2).to_classifier_clause(payload_offset + 2))
-        if 'UDP_SRC' in match:
-            clauses.append(IntMatchField(match['UDP_SRC'], 2).to_classifier_clause(payload_offset))
-        if 'UDP_DST' in match:
-            clauses.append(IntMatchField(match['UDP_DST'], 2).to_classifier_clause(payload_offset + 2))
-
-        if clauses:
-            return [' '.join(clauses)]
-        else:
-            return ['-']
 
 
 RegexMatcher = build_click_block('RegexMatcher',
@@ -930,3 +880,17 @@ class HeaderPayloadClassifier(ClickBlock):
                                                     dst=self._to_external_element_name(self._MULTICOUNTER),
                                                     src_port=pattern_number, dst_port=original_match_number))
                 pattern_number += 1
+
+
+obb = OpenBoxBlock.from_dict(dict(type='HeaderClassifier', name='asfd',
+                                  config=dict(match=[
+                                      dict(ETH_SRC="00:11:22:33:44:55", ETH_TYPE=0x800, IPV4_SRC="1.1.1.1"),
+                                      dict(ETH_DST="aa:bb:cc:dd:ee:ff", ETH_TYPE=0x800, IPV4_DST="3.3.3.3"),
+                                  ])))
+
+cb = ClickBlock.from_open_box_block(obb)
+for e in cb.elements():
+    print e
+
+for c in cb.connections():
+    print c
