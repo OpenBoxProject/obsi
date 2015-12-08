@@ -45,6 +45,16 @@ class ConfigField(object):
         self.type = type
         self.description = description or ''
 
+    @classmethod
+    def from_dict(cls, config):
+        name = config['name']
+        required = bool(config['required'])
+        type = config['type']
+        descr = config.get('description', None)
+        if type not in FieldType.__dict__.values():
+            raise ValueError("unknown type %s for field" % type)
+        return cls(name, required, type, descr)
+
     def validate_value_type(self, value):
         if self.type == FieldType.NULL:
             return value is None
@@ -129,6 +139,15 @@ class HandlerField(object):
         result['type'] = self.type
         result['description'] = self.description
         return result
+
+    @classmethod
+    def from_dict(cls, config):
+        name = config['name']
+        type = config['type']
+        descr = config.get('description', None)
+        if type not in FieldType.__dict__.values():
+            raise ValueError("unknown type %s for field" % type)
+        return cls(name, type, descr)
 
 
 class OpenBoxBlockMeta(type):
@@ -256,7 +275,11 @@ def build_open_box_block(name, config_fields=None, read_handlers=None, write_han
 
 
 def build_open_box_block_from_dict(block):
-    return build_open_box_block(block['name'], block['config_fields'], block['read_handlers'], block['write_handlers'])
+    name = block['name']
+    config_fields = [ConfigField.from_dict(cfg) for cfg in block.get('config_fields', [])]
+    read_handlers = [ConfigField.from_dict(handler) for handler in block.get('read_handlers', [])]
+    write_handlers = [ConfigField.from_dict(handler) for handler in block.get('write_handlers', [])]
+    return build_open_box_block(name, config_fields, read_handlers, write_handlers)
 
 
 def build_open_box_from_json(json_block):
