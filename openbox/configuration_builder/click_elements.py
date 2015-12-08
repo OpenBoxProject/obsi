@@ -204,6 +204,7 @@ class Element(object):
     def __str__(self):
         return self.to_click_config()
 
+
 def build_element(name, list_argument=None, mandatory_positional=None, optional_positional=None, keywords=None,
                   read_handlers=None, write_handlers=None):
     """
@@ -379,6 +380,11 @@ RegexClassifier = build_element("RegexClassifier",
                                 keywords=[KeywordArgument('payload_only')],
                                 read_handlers=['payload_only', 'pattern$i'],
                                 write_handlers=['payload_only', 'pattern$i'])
+
+GroupRegexClassifier = build_element("GroupRegexClassifier",
+                                     list_argument=ListArguments('pattern'),
+                                     read_handlers=['pattern$i'],
+                                     write_handlers=['pattern$i'])
 
 VLANDecap = build_element('VLANDecap',
                           keywords=[KeywordArgument('anno')])

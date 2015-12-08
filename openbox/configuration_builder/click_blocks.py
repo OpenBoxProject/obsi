@@ -783,7 +783,7 @@ class HeaderPayloadClassifier(ClickBlock):
     # Fake attributes used by other API functions
     __elements__ = (dict(name='counter', type='MultiCounter', config={}),
                     dict(name='classifier', type='Classifier', config=dict(pattern=[])),
-                    dict(name='regex_classifier', type='RegexClassifier', config=dict(pattern=[]))
+                    dict(name='regex_classifier', type='GroupRegexClassifier', config=dict(pattern=[]))
                     )
     __input__ = 'classifier'
     __output__ = 'counter'
@@ -860,11 +860,12 @@ class HeaderPayloadClassifier(ClickBlock):
 
     def _create_regex_classifier_element_for_match(self, match, match_number):
         patterns = []
-        for original_match_number in sorted(match.payload_matches):
-            patterns.extend(match.payload_matches[original_match_number])
+        for i, original_match_number in enumerate(sorted(match.payload_matches)):
+            for pattern in match.payload_matches[original_match_number]:
+                patterns.append('"{pattern}" {group_number}'.format(pattern=pattern, group_number=i))
         self._elements.append(
             Element.from_dict(dict(name=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
-                                   type='RegexClassifier', config=dict(pattern=patterns))))
+                                   type='GroupRegexClassifier', config=dict(pattern=patterns))))
 
     def _create_content_classifier_to_regex_classifier_connection(self, pattern_number, match_number):
         self._connections.append(
@@ -873,24 +874,7 @@ class HeaderPayloadClassifier(ClickBlock):
                        src_port=pattern_number, dst_port=0))
 
     def _create_regex_classifier_to_counter_connections(self, match, match_number):
-        pattern_number = 0
-        for original_match_number in sorted(match.payload_matches):
-            for _ in match.payload_matches[original_match_number]:
-                self._connections.append(Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
-                                                    dst=self._to_external_element_name(self._MULTICOUNTER),
-                                                    src_port=pattern_number, dst_port=original_match_number))
-                pattern_number += 1
-
-
-obb = OpenBoxBlock.from_dict(dict(type='HeaderClassifier', name='asfd',
-                                  config=dict(match=[
-                                      dict(ETH_SRC="00:11:22:33:44:55", ETH_TYPE=0x800, IPV4_SRC="1.1.1.1"),
-                                      dict(ETH_DST="aa:bb:cc:dd:ee:ff", ETH_TYPE=0x800, IPV4_DST="3.3.3.3"),
-                                  ])))
-
-cb = ClickBlock.from_open_box_block(obb)
-for e in cb.elements():
-    print e
-
-for c in cb.connections():
-    print c
+        for i, original_match_number in enumerate(sorted(match.payload_matches)):
+            self._connections.append(Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                                                dst=self._to_external_element_name(self._MULTICOUNTER),
+                                                src_port=i, dst_port=original_match_number))
