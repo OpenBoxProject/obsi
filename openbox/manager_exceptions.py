@@ -16,3 +16,11 @@ class EngineNotRunningError(ManagerError):
 
 class ProcessingGraphNotSetError(ManagerError):
     pass
+
+
+class UnknownRequestedParameter(ManagerError):
+    pass
+
+
+class UnsupportedModuleDataEncoding(ManagerError):
+    pass

@@ -11,7 +11,7 @@ A configuration and definitions file used by the EE runner server and client
 from click_runner_client import ClickRunnerClient
 
 ENGINES = {'click': (ClickRunnerClient, dict(click_bin=r'/usr/local/bin/click', allow_reconfigure=True,
-                                             click_path=r'/usr/local/lib'))}
+                                             click_path=r'/tmp'))}
 
 
 class RestServer:

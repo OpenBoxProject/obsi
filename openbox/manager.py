@@ -17,7 +17,8 @@ import psutil
 import config
 import messages
 import rest_server
-from manager_exceptions import EngineNotRunningError, ProcessingGraphNotSetError
+from manager_exceptions import EngineNotRunningError, ProcessingGraphNotSetError, UnknownRequestedParameter, \
+    UnsupportedModuleDataEncoding
 from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
@@ -491,9 +492,19 @@ class Manager(object):
                     partial[parameter] = result[parameter]
 
                 return partial
-            except KeyError:
-                # TODO: Better error
-                raise
+            except KeyError as e:
+                raise UnknownRequestedParameter("Request unknown parameter {parm}".format(parm=e.message))
+
+    @gen.coroutine
+    def add_custom_module(self, name, content, content_type, encoding, translation):
+        if content:
+            if encoding.lower() != 'base64':
+                raise UnsupportedModuleDataEncoding("Unknown encoding '{enc}' for module content".format(enc=encoding))
+            package = dict(name=name, data=content, encoding=encoding.lower())
+            client = httpclient.AsyncHTTPClient()
+            uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.INSTALL)
+            yield client.fetch(uri, method='POST', body=json_encode(package))
+
 
 
 def main():
