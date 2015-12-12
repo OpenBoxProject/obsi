@@ -9,12 +9,17 @@
 Transforms an OpenBox configuration in to a Click's configuration
 """
 import capabilities
-from click_blocks import ClickBlock
+from click_blocks import ClickBlock, build_click_block_from_dict
 from click_configuration import ClickConfiguration
+from click_elements import build_element_from_dict
+from open_box_blocks import build_open_box_block_from_dict
 from connection import Connection
+from configuration_builder_exceptions import ClickModuleTranslationError
 
 
 class ClickConfigurationBuilder(object):
+    _installed_modules = {}
+
     def __init__(self, requirements=None, click_blocks=None, connections=None):
         self.requirements = requirements or []
         self.blocks = click_blocks or []
@@ -97,3 +102,39 @@ class ClickConfigurationBuilder(object):
         except KeyError:
             raise ValueError('Unknown block named: {name}'.format(name=block_name))
         return block.translate_write_handler(handler_name)
+
+    @classmethod
+    def add_custom_module(cls, name, translation):
+        translation = byteify(translation)
+        try:
+            open_box_blocks_defs = translation['open_box_blocks']
+            click_elements_defs = translation['click_elements']
+            click_blocks_defs = translation['click_blocks']
+        except KeyError as e:
+            raise ClickModuleTranslationError("Missing '{field}' in translation configuration".format(field=e.message))
+
+        if not isinstance(open_box_blocks_defs, (tuple, list)):
+            raise ClickModuleTranslationError("open_box_blocks must be a list of OpenBox Block Definitions")
+        if not isinstance(click_elements_defs, (tuple, list)):
+            raise ClickModuleTranslationError("click_elements must be a list of Click Elements Definitions")
+        if not isinstance(click_blocks_defs, (tuple, list)):
+            raise ClickModuleTranslationError("click_blocks must be a list of Click Block Definitions")
+
+        open_box_blocks = [build_open_box_block_from_dict(obb) for obb in open_box_blocks_defs]
+        click_elements = [build_element_from_dict(element) for element in click_elements_defs]
+        click_blocks = [build_click_block_from_dict(cbd) for cbd in click_blocks_defs]
+
+        cls._installed_modules[name] = dict(open_box_blocks=open_box_blocks,
+                                            click_elements=click_elements,
+                                            click_blocks=click_blocks)
+
+
+def byteify(input):
+    if isinstance(input, dict):
+        return {byteify(key): byteify(value) for key, value in input.iteritems()}
+    elif isinstance(input, list):
+        return [byteify(element) for element in input]
+    elif isinstance(input, unicode):
+        return input.encode('utf-8')
+    else:
+        return input

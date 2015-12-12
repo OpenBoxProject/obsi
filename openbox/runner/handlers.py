@@ -149,7 +149,7 @@ class InstallPackageRequestHandler(BaseRunnerRequestHandler):
         try:
             engine = self._engine()
             package = self._decode_json_body()
-            engine.install_package(package['name'], package['data'].decode('base64'))
+            engine.install_package(package['name'], package['data'].decode(package['encoding']))
         except EngineClientError as e:
             raise tornado.web.HTTPError(400, reason=e.message)
 

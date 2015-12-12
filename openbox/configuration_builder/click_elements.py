@@ -4,6 +4,7 @@
 #
 # The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
 #####################################################################
+import json
 
 from configuration_builder_exceptions import ClickElementConfigurationError
 
@@ -204,6 +205,7 @@ class Element(object):
     def __str__(self):
         return self.to_click_config()
 
+
 def build_element(name, list_argument=None, mandatory_positional=None, optional_positional=None, keywords=None,
                   read_handlers=None, write_handlers=None):
     """
@@ -254,6 +256,36 @@ def build_element(name, list_argument=None, mandatory_positional=None, optional_
                          }
 
     return ElementMeta(name, (Element,), element_arguments)
+
+
+def build_element_from_dict(element):
+    if not isinstance(element, dict):
+        raise TypeError("Cannot build element from '%s'" % type(element))
+    name = element['name']
+    list_argument = None
+    mandatory_positional = None
+    optional_positional = None
+    keywords = None
+    read_handlers = None
+    write_handlers = None
+    if 'list_argument' in element:
+        list_argument = ListArguments(element['list_argument'])
+    if 'mandatory_positional' in element and isinstance(element['mandatory_positional'], (tuple, list)):
+        mandatory_positional = [MandatoryPositionalArgument(arg) for arg in element['mandatory_positional']]
+    if 'optional_positional' in element and isinstance(element['optional_positional'], (tuple, list)):
+        optional_positional = [OptionalPositionalArgument(arg) for arg in element['optional_positional']]
+    if 'keywords' in element and isinstance(element['keywords'], (tuple, list)):
+        keywords = [KeywordArgument(arg) for arg in element['keywords']]
+    if 'read_handlers' in element and isinstance(element['read_handlers'], (tuple, list)):
+        read_handlers = [handler for handler in element['read_handlers']]
+    if 'write_handlers' in element and isinstance(element['write_handlers'], (tuple, list)):
+        write_handlers = [handler for handler in element['write_handlers']]
+    return build_element(name, list_argument, mandatory_positional, optional_positional, keywords, read_handlers,
+                         write_handlers)
+
+
+def build_element_from_json(element):
+    return build_element_from_dict(json.loads(element))
 
 
 Idle = build_element('Idle')
@@ -379,6 +411,11 @@ RegexClassifier = build_element("RegexClassifier",
                                 keywords=[KeywordArgument('payload_only')],
                                 read_handlers=['payload_only', 'pattern$i'],
                                 write_handlers=['payload_only', 'pattern$i'])
+
+GroupRegexClassifier = build_element("GroupRegexClassifier",
+                                     list_argument=ListArguments('pattern'),
+                                     read_handlers=['pattern$i'],
+                                     write_handlers=['pattern$i'])
 
 VLANDecap = build_element('VLANDecap',
                           keywords=[KeywordArgument('anno')])

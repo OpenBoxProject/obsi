@@ -17,7 +17,8 @@ import psutil
 import config
 import messages
 import rest_server
-from manager_exceptions import EngineNotRunningError, ProcessingGraphNotSetError
+from manager_exceptions import EngineNotRunningError, ProcessingGraphNotSetError, UnknownRequestedParameter, \
+    UnsupportedModuleDataEncoding
 from tornado import httpclient, gen, options, locks
 from tornado.escape import json_decode, json_encode, url_escape
 from tornado.log import app_log
@@ -259,8 +260,6 @@ class Manager(object):
         try:
             uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.SUPPORTED_ELEMENTS)
             response = self._http_client.fetch(uri)
-
-            # TODO: update this on Module installation and removal
             self._supported_elements_types = set(json_decode(response.body))
             supported_blocks = set(self.config_builder.supported_blocks())
             blocks_from_engine = set(self.config_builder.supported_blocks_from_supported_engine_elements_types(
@@ -491,9 +490,38 @@ class Manager(object):
                     partial[parameter] = result[parameter]
 
                 return partial
-            except KeyError:
-                # TODO: Better error
-                raise
+            except KeyError as e:
+                raise UnknownRequestedParameter("Request unknown parameter {parm}".format(parm=e.message))
+
+    @gen.coroutine
+    def add_custom_module(self, name, content, content_type, encoding, translation):
+        if content:
+            if encoding.lower() != 'base64':
+                raise UnsupportedModuleDataEncoding("Unknown encoding '{enc}' for module content".format(enc=encoding))
+            yield self._install_package(name, content, encoding.lower())
+            yield self._update_running_config_with_package(name)
+            yield self._update_supported_elements()
+            self.config_builder.add_custom_module(name, translation)
+
+    @gen.coroutine
+    def _install_package(self, name, content, encoding):
+        package = dict(name=name, data=content, encoding=encoding)
+        client = httpclient.AsyncHTTPClient()
+        uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.INSTALL)
+        yield client.fetch(uri, method='POST', body=json_encode(package))
+
+    @gen.coroutine
+    def _update_running_config_with_package(self, name):
+        client = httpclient.AsyncHTTPClient()
+        uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.LOADED_PACKAGES)
+        yield client.fetch(uri, method='POST', body=json_encode(name))
+
+    @gen.coroutine
+    def _update_supported_elements(self):
+        client = httpclient.AsyncHTTPClient()
+        uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.SUPPORTED_ELEMENTS)
+        response = yield client.fetch(uri)
+        self._supported_elements_types = set(json_decode(response.body))
 
 
 def main():

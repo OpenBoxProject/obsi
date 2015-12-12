@@ -45,6 +45,16 @@ class ConfigField(object):
         self.type = type
         self.description = description or ''
 
+    @classmethod
+    def from_dict(cls, config):
+        name = config['name']
+        required = bool(config['required'])
+        type = config['type']
+        descr = config.get('description', None)
+        if type not in FieldType.__dict__.values():
+            raise ValueError("unknown type %s for field" % type)
+        return cls(name, required, type, descr)
+
     def validate_value_type(self, value):
         if self.type == FieldType.NULL:
             return value is None
@@ -130,6 +140,15 @@ class HandlerField(object):
         result['description'] = self.description
         return result
 
+    @classmethod
+    def from_dict(cls, config):
+        name = config['name']
+        type = config['type']
+        descr = config.get('description', None)
+        if type not in FieldType.__dict__.values():
+            raise ValueError("unknown type %s for field" % type)
+        return cls(name, type, descr)
+
 
 class OpenBoxBlockMeta(type):
     def __init__(cls, name, bases, dct):
@@ -189,13 +208,17 @@ class OpenBoxBlock(object):
         return clazz(name, **config)
 
     @classmethod
-    def to_json_schema(cls, **kwargs):
+    def to_dict_schema(cls):
         schema = OrderedDict()
         schema['type'] = cls.__name__
         schema['configuration'] = [field.to_dict() for field in cls.__fields__]
         schema['read_handlers'] = [field.to_dict() for field in cls.__read_handlers__]
         schema['write_handlers'] = [field.to_dict() for field in cls.__write_handlers__]
-        return json.dumps(schema, **kwargs)
+        return schema
+
+    @classmethod
+    def to_json_schema(cls, **kwargs):
+        return json.dumps(cls.to_dict_schema(), **kwargs)
 
     def to_dict(self):
         result = OrderedDict()
@@ -256,7 +279,11 @@ def build_open_box_block(name, config_fields=None, read_handlers=None, write_han
 
 
 def build_open_box_block_from_dict(block):
-    return build_open_box_block(block['name'], block['config_fields'], block['read_handlers'], block['write_handlers'])
+    name = block['name']
+    config_fields = [ConfigField.from_dict(cfg) for cfg in block.get('config_fields', [])]
+    read_handlers = [ConfigField.from_dict(handler) for handler in block.get('read_handlers', [])]
+    write_handlers = [ConfigField.from_dict(handler) for handler in block.get('write_handlers', [])]
+    return build_open_box_block(name, config_fields, read_handlers, write_handlers)
 
 
 def build_open_box_from_json(json_block):
@@ -572,3 +599,11 @@ HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
                                                write_handlers=[
                                                    HandlerField('reset_counts', FieldType.NULL)
                                                ])
+
+
+if __name__ == '__main__':
+    blocks = [block.to_dict_schema() for block in OpenBoxBlock.blocks_registry.values()]
+    with open('blocks.json', 'wb') as f:
+        f.write(json.dumps(blocks, indent=2))
+
+

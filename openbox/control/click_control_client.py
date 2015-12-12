@@ -95,6 +95,11 @@ class ClickControlClient(object):
         else:
             return []
 
+    def load_package(self, package):
+        old_config = self.running_config()
+        new_config = 'require(package "{package}");\n'.format(package=package) + old_config
+        self.hotswap(new_config)
+
     def supported_elements(self):
         return self._read_global('classes').strip().split('\n')
 

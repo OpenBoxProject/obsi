@@ -38,4 +38,7 @@ class ConfigurationBuilder(object):
     def supported_complex_match(self):
         return self.engine_builder.supported_complex_match()
 
+    def add_custom_module(self, name, translation):
+        return self.engine_builder.add_custom_module(name, translation)
+
 
