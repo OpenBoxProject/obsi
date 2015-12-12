@@ -208,13 +208,17 @@ class OpenBoxBlock(object):
         return clazz(name, **config)
 
     @classmethod
-    def to_json_schema(cls, **kwargs):
+    def to_dict_schema(cls):
         schema = OrderedDict()
         schema['type'] = cls.__name__
         schema['configuration'] = [field.to_dict() for field in cls.__fields__]
         schema['read_handlers'] = [field.to_dict() for field in cls.__read_handlers__]
         schema['write_handlers'] = [field.to_dict() for field in cls.__write_handlers__]
-        return json.dumps(schema, **kwargs)
+        return schema
+
+    @classmethod
+    def to_json_schema(cls, **kwargs):
+        return json.dumps(cls.to_dict_schema(), **kwargs)
 
     def to_dict(self):
         result = OrderedDict()
@@ -595,3 +599,11 @@ HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
                                                write_handlers=[
                                                    HandlerField('reset_counts', FieldType.NULL)
                                                ])
+
+
+if __name__ == '__main__':
+    blocks = [block.to_dict_schema() for block in OpenBoxBlock.blocks_registry.values()]
+    with open('blocks.json', 'wb') as f:
+        f.write(json.dumps(blocks, indent=2))
+
+
