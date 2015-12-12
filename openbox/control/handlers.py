@@ -94,6 +94,16 @@ class LoadedPackagesRequestHandler(BaseControlRequestHandler):
         except ControlError as e:
             raise tornado.web.HTTPError(500, reason=e.message)
 
+    def post(self, *args, **kwargs):
+        engine = self.control.engine
+        if not self.control.engine.connected:
+            raise tornado.web.HTTPError(400, reason="Not connected")
+        package = self._decode_json_body()
+        try:
+            engine.load_package(package)
+        except ControlError as e:
+            raise tornado.web.HTTPError(500, reason=e.message)
+
 
 class SupportedElementsRequestHandler(BaseControlRequestHandler):
     def get(self, *args, **kwargs):

@@ -69,7 +69,7 @@ ControlSocket("{control_type}", {control_endpoint}, RETRIES 3, RETRY_WARNINGS fa
 require(package "openbox");
 alert::ChatterMessage("ALERT", "{test_alert_message}", CHANNEL {channel});
 log::ChatterMessage("LOG", "{test_log_message}", CHANNEL {channel});
-timed_source::TimedSource(1, "base");
+timed_source::TimedSource(10, "base");
 discard::Discard();
 timed_source -> alert -> log -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_TYPE,
                                                   push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
