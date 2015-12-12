@@ -38,3 +38,7 @@ class OpenBoxBlockConfigurationError(ConfigurationError):
 
 class OpenBoxConfigurationError(ConfigurationError):
     pass
+
+
+class ClickModuleTranslationError(EngineConfigurationError):
+    pass

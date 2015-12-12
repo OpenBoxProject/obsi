@@ -85,9 +85,8 @@ timed_source -> alert -> log -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET
                                                   )
 
     class Capabilities:
-        MODULE_INSTALLATION = False
+        MODULE_INSTALLATION = True
         MODULE_REMOVAL = False
-        COMPLEX_MATCH = False
 
 
 class Runner:

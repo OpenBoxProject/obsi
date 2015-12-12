@@ -501,6 +501,7 @@ class Manager(object):
             yield self._install_package(name, content, encoding.lower())
             yield self._update_running_config_with_package(name)
             yield self._update_supported_elements()
+            self.config_builder.add_custom_module(name, translation)
 
     @gen.coroutine
     def _install_package(self, name, content, encoding):

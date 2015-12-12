@@ -331,7 +331,7 @@ def _update_handler_mapping(element_names, mapping, handler_type):
 
 
 def build_click_block_from_dict(config):
-    name = config.pop('type')
+    name = config.pop('name')
     return build_click_block(name, **config)
 
 
