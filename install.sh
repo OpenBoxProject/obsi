@@ -1,11 +1,11 @@
 #! /bin/bash
-HOMEDIR=$(cd ~;pwd)
-OBSI_DIR=$HOMEDIR/obsi
+OBSI_DIR=$(pwd)
+OPENBOX_CLICK_PACKAGE=OBSI_DIR/openbox-click-package
 BUILD_DIR="/tmp/build"
 RE2_URL="https://github.com/google/re2.git"
 RE2_TAG="2015-11-01"
 CLICK_URL="https://github.com/kohler/click.git"
-CLICK_PREFIX=$HOMEDIR/click
+CLICK_INSTALL_DIR=$HOME/click
 
 function install_build_utils {
 	sudo apt-get install g++
@@ -32,11 +32,22 @@ function install_click {
 	git clone $CLICK_URL
 	cd click
 	echo "[+] Configuring Click"
- 	./configure --prefix=$CLICK_PREFIX --disable-linuxmodule --disable-linux-symbols --disable-linuxmodule --disable-bsdmodule --enable-all-elements --enable-user-multithread --enable-stats=1 --enable-json --disable-test
+ 	./configure --prefix=$CLICK_INSTALL_DIR --disable-linuxmodule --disable-linux-symbols --disable-linuxmodule --disable-bsdmodule --enable-all-elements --enable-user-multithread --enable-stats=1 --enable-json --disable-test
 	echo "[+] Compiling Click"
 	make 
 	echo "[+] Installing Click"
 	make install	
+}
+
+function install_openbox_click_package {
+	cd OPENBOX_CLICK_PACKAGE
+	echo "[+] Configuring OpenBox Click Package"
+	autoconf 
+	./configure --prefix=$CLICK_INSTALL_DIR
+	echo "[+] Compiling OpenBox Click Package"
+	make 
+	echo "[+] Installing OpenBox Click Package"
+	make install
 }
 
 install_build_utils
@@ -44,3 +55,4 @@ rm -rf $BUILD_DIR
 mkdir $BUILD_DIR
 install_click
 install_re2
+install_openbox_click_package
