@@ -1,11 +1,11 @@
 #! /bin/bash
-
-OBSI_DIR="~/obsi"
+HOMEDIR=$(cd ~;pwd)
+OBSI_DIR=$HOMEDIR/obsi
 BUILD_DIR="/tmp/build"
 RE2_URL="https://github.com/google/re2.git"
 RE2_TAG="2015-11-01"
 CLICK_URL="https://github.com/kohler/click.git"
-CLICK_PREFIX="~/click"
+CLICK_PREFIX=$HOMEDIR/click
 
 function install_build_utils {
 	sudo apt-get install g++
