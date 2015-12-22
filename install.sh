@@ -8,7 +8,7 @@ CLICK_URL="https://github.com/kohler/click.git"
 CLICK_INSTALL_DIR=$HOME/click
 
 function install_build_utils {
-	sudo apt-get install g++
+	apt-get install g++
 }
 
 function install_re2 {
@@ -22,8 +22,8 @@ function install_re2 {
 	echo "[+] Testing RE2"
 	make test
 	echo "[+] Installing RE2"
-	sudo make install 
-	sudo make testinstall
+	make install 
+	make testinstall
 }
 
 function install_click {
