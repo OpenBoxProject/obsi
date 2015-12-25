@@ -5,7 +5,7 @@ BUILD_DIR="/tmp/build"
 RE2_URL="https://github.com/google/re2.git"
 RE2_TAG="2015-11-01"
 CLICK_URL="https://github.com/kohler/click.git"
-CLICK_INSTALL_DIR=$HOME/click
+#CLICK_INSTALL_DIR=$HOME/click
 
 function install_build_utils {
 	apt-get install g++
@@ -32,7 +32,7 @@ function install_click {
 	git clone $CLICK_URL
 	cd click
 	echo "[+] Configuring Click"
- 	./configure --prefix=$CLICK_INSTALL_DIR --disable-linuxmodule --disable-linux-symbols --disable-linuxmodule --disable-bsdmodule --enable-all-elements --enable-user-multithread --enable-stats=1 --enable-json --disable-test
+ 	./configure --disable-linuxmodule --disable-linux-symbols --disable-linuxmodule --disable-bsdmodule --enable-all-elements --enable-user-multithread --enable-stats=1 --enable-json --disable-test
 	echo "[+] Compiling Click"
 	make 
 	echo "[+] Installing Click"
@@ -43,7 +43,7 @@ function install_openbox_click_package {
 	cd $OPENBOX_CLICK_PACKAGE
 	echo "[+] Configuring OpenBox Click Package"
 	autoconf 
-	./configure --prefix=$CLICK_INSTALL_DIR
+	./configure
 	echo "[+] Compiling OpenBox Click Package"
 	make 
 	echo "[+] Installing OpenBox Click Package"
