@@ -1,6 +1,6 @@
 #! /bin/bash
 OBSI_DIR=$(pwd)
-OPENBOX_CLICK_PACKAGE=OBSI_DIR/openbox-click-package
+OPENBOX_CLICK_PACKAGE=$OBSI_DIR/openbox-click-package
 BUILD_DIR="/tmp/build"
 RE2_URL="https://github.com/google/re2.git"
 RE2_TAG="2015-11-01"
@@ -40,7 +40,7 @@ function install_click {
 }
 
 function install_openbox_click_package {
-	cd OPENBOX_CLICK_PACKAGE
+	cd $OPENBOX_CLICK_PACKAGE
 	echo "[+] Configuring OpenBox Click Package"
 	autoconf 
 	./configure --prefix=$CLICK_INSTALL_DIR
