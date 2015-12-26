@@ -34,7 +34,7 @@ class KeepAlive:
 
 
 class OpenBoxController:
-    HOSTNAME = "localhost"
+    HOSTNAME = "127.0.0.1"
     PORT = 3637
     BASE_URI = "http://{host}:{port}".format(host=HOSTNAME, port=PORT)
     MESSAGE_ENDPOINT_PATTERN = BASE_URI + "/message/{message}"
@@ -47,7 +47,7 @@ class Watchdog:
 class RestServer:
     DEBUG = True
     PORT = 3636
-    BASE_URI = 'http://localhost:{port}'.format(port=PORT)
+    BASE_URI = 'http://127.0.0.1:{port}'.format(port=PORT)
 
     class Endpoints:
         RUNNER_ALERT = '/obsi/runner_alert'
@@ -64,25 +64,27 @@ class Engine:
     PUSH_MESSAGES_CHANNEL = 'openbox'
     NTHREADS = 2
     REQUIREMENTS = ['openbox']
-    BASE_EMPTY_CONFIG = r'''ChatterSocket("{push_type}", {push_endpoint}, RETRIES 3, RETRY_WARNINGS false, CHANNEL {channel});
+    BASE_EMPTY_CONFIG = r'''{requirements}
+ChatterSocket("{push_type}", {push_endpoint}, RETRIES 3, RETRY_WARNINGS false, CHANNEL {channel});
 ControlSocket("{control_type}", {control_endpoint}, RETRIES 3, RETRY_WARNINGS false);
-require(package "openbox");
 alert::ChatterMessage("ALERT", "{test_alert_message}", CHANNEL {channel});
 log::ChatterMessage("LOG", "{test_log_message}", CHANNEL {channel});
 timed_source::TimedSource(10, "base");
 discard::Discard();
-timed_source -> alert -> log -> discard'''.format(push_type=PUSH_MESSAGES_SOCKET_TYPE,
-                                                  push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
-                                                  channel=PUSH_MESSAGES_CHANNEL,
-                                                  control_type=CONTROL_SOCKET_TYPE,
-                                                  control_endpoint=CONTROL_SOCKET_ENDPOINT,
-                                                  test_alert_message=r'{\"message\": \"This is a test alert\",'
-                                                                     r' \"origin_block\": \"alert\",'
-                                                                     r' \"packet\": \"00 00 00 00\"}',
-                                                  test_log_message=r'{\"message\": \"This is a test log\",'
-                                                                   r' \"origin_block\": \"log\",'
-                                                                   r' \"packet\": \"00 00 00 00\"}'
-                                                  )
+timed_source -> alert -> log -> discard;'''.format(
+        requirements='\n'.join('require(package "%s")' % package for package in REQUIREMENTS),
+        push_type=PUSH_MESSAGES_SOCKET_TYPE,
+        push_endpoint=PUSH_MESSAGES_SOCKET_ENDPOINT,
+        channel=PUSH_MESSAGES_CHANNEL,
+        control_type=CONTROL_SOCKET_TYPE,
+        control_endpoint=CONTROL_SOCKET_ENDPOINT,
+        test_alert_message=r'{\"message\": \"This is a test alert\",'
+                           r' \"origin_block\": \"alert\",'
+                           r' \"packet\": \"00 00 00 00\"}',
+        test_log_message=r'{\"message\": \"This is a test log\",'
+                         r' \"origin_block\": \"log\",'
+                         r' \"packet\": \"00 00 00 00\"}'
+    )
 
     class Capabilities:
         MODULE_INSTALLATION = True
@@ -94,7 +96,7 @@ class Runner:
         BIN = os.path.join(BASE_PATH, 'runner', 'rest_server.py')
         DEBUG = True
         PORT = 9001
-        BASE_URI = 'http://localhost:{port}'.format(port=PORT)
+        BASE_URI = 'http://127.0.0.1:{port}'.format(port=PORT)
         Endpoints = runner_config.RestServer.Endpoints
 
 
@@ -103,18 +105,18 @@ class Control:
         BIN = os.path.join(BASE_PATH, 'control', 'rest_server.py')
         DEBUG = True
         PORT = 9002
-        BASE_URI = 'http://localhost:{port}'.format(port=PORT)
+        BASE_URI = 'http://127.0.0.1:{port}'.format(port=PORT)
         Endpoints = control_config.RestServer.Endpoints
 
     SOCKET_TYPE = Engine.CONTROL_SOCKET_TYPE
     SOCKET_ADDRESS = (
-        'localhost', Engine.CONTROL_SOCKET_ENDPOINT) if SOCKET_TYPE == 'TCP' else Engine.CONTROL_SOCKET_ENDPOINT
+        '127.0.0.1', Engine.CONTROL_SOCKET_ENDPOINT) if SOCKET_TYPE == 'TCP' else Engine.CONTROL_SOCKET_ENDPOINT
 
 
 class PushMessages:
     SOCKET_FAMILY = socket.AF_INET if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else socket.AF_UNIX
     SOCKET_ADDRESS = (
-        'localhost',
+        '127.0.0.1',
         Engine.PUSH_MESSAGES_SOCKET_ENDPOINT) if Engine.PUSH_MESSAGES_SOCKET_TYPE == 'TCP' else Engine.PUSH_MESSAGES_SOCKET_ENDPOINT
     RETRY_INTERVAL = 1
 

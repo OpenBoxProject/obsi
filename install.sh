@@ -8,7 +8,8 @@ CLICK_URL="https://github.com/kohler/click.git"
 #CLICK_INSTALL_DIR=$HOME/click
 
 function install_build_utils {
-	apt-get install g++
+	apt-get update
+	apt-get install build-essential python-dev g++ python-pip
 }
 
 function install_re2 {
@@ -50,9 +51,15 @@ function install_openbox_click_package {
 	make install
 }
 
+function install_python_dependency {
+	pip install tornado
+	pip install psutil
+}
+
 install_build_utils
 rm -rf $BUILD_DIR
 mkdir $BUILD_DIR
 install_click
 install_re2
 install_openbox_click_package
+install_python_dependency
