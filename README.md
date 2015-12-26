@@ -24,3 +24,6 @@ python mock_controller.py
 Just kill the process and the 2 subprocess it creates:
 ps -fade | grep python 
 sudo kill -9 <PID>
+
+# Auther
+Pavel Lazar (pavel.lazar (at) gmail.com)
