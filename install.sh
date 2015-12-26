@@ -25,6 +25,8 @@ function install_re2 {
 	echo "[+] Installing RE2"
 	make install 
 	make testinstall
+	echo "[+] Fixind ld paths"
+	ldconfig
 }
 
 function install_click {
