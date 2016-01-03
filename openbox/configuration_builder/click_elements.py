@@ -359,6 +359,23 @@ Discard = build_element('Discard',
 
 AutoMarkIPHeader = build_element('AutoMarkIPHeader')
 
+ToDevice = build_element('ToDevice',
+                         mandatory_positional=[
+                             MandatoryPositionalArgument('devname')
+                         ],
+                         optional_positional=[
+                             OptionalPositionalArgument('burst')
+                         ],
+                         keywords=[
+                             KeywordArgument('quiet'),
+                             KeywordArgument('queue'),
+                             KeywordArgument('allow_nonexistent'),
+                             KeywordArgument('no_pad'),
+                         ],
+                         read_handlers=[
+
+                         ]
+                         )
 ToDump = build_element('ToDump',
                        mandatory_positional=[
                            MandatoryPositionalArgument('filename')
@@ -370,8 +387,9 @@ ToDump = build_element('ToDump',
                            KeywordArgument('extra_length'),
                            KeywordArgument('unbuffered'),
                        ],
-                       read_handlers=[],
-                       write_handlers=[])
+                       read_handlers=['count', 'calls', 'drops', ],
+                       write_handlers=['reset_counts']
+                       )
 
 PushMessage = build_element('PushMessage',
                             mandatory_positional=[

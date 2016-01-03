@@ -411,6 +411,14 @@ ToDump = build_click_block('ToDump',
                            ],
                            input='to_dump')
 
+ToDevice = build_click_block('ToDevice',
+                             config_mapping=dict(devname=_no_transform('devname')),
+                             elements=[
+                                 dict(name='to_device', type='ToDevice', config=dict(devname='$devname'))
+                             ],
+                             input='to_device'
+                             )
+
 Log = build_click_block('Log',
                         config_mapping=dict(content=(['name', 'severity', 'message'], 'to_push_message_content'),
                                             attach_packet=_no_transform('attach_packet'),
