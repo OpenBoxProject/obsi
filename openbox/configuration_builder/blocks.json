@@ -442,6 +442,89 @@
     ]
   }, 
   {
+    "type": "VlanEncapsulate", 
+    "configuration": [
+      {
+        "name": "vlan_vid", 
+        "required": true, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_dei", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_pcp", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "ethertype", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "vlan_vid", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_dei", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_pcp", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_tci", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "ethertype", 
+        "type": "integer", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "vlan_vid", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_dei", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_pcp", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "vlan_tci", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "ethertype", 
+        "type": "integer", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
     "type": "Alert", 
     "configuration": [
       {
@@ -990,86 +1073,16 @@
     ]
   }, 
   {
-    "type": "VlanEncapsulate", 
+    "type": "ToDevice", 
     "configuration": [
       {
-        "name": "vlan_vid", 
+        "name": "devname", 
         "required": true, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_dei", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_pcp", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "ethertype", 
-        "required": false, 
-        "type": "integer", 
+        "type": "string", 
         "description": ""
       }
     ], 
-    "read_handlers": [
-      {
-        "name": "vlan_vid", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_dei", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_pcp", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_tci", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "ethertype", 
-        "type": "integer", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "vlan_vid", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_dei", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_pcp", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "vlan_tci", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "ethertype", 
-        "type": "integer", 
-        "description": ""
-      }
-    ]
+    "read_handlers": [], 
+    "write_handlers": []
   }
 ]

@@ -340,6 +340,11 @@ Discard = build_open_box_block('Discard',
                                    HandlerField('active', FieldType.BOOLEAN)
                                ])
 
+ToDevice = build_open_box_block('ToDevice',
+                                config_fields=[
+                                    ConfigField('devname', True, FieldType.STRING),
+                                ])
+
 ToDump = build_open_box_block('ToDump',
                               config_fields=[
                                   ConfigField('filename', True, FieldType.STRING),
@@ -599,7 +604,6 @@ HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
                                                write_handlers=[
                                                    HandlerField('reset_counts', FieldType.NULL)
                                                ])
-
 
 if __name__ == '__main__':
     blocks = [block.to_dict_schema() for block in OpenBoxBlock.blocks_registry.values()]
