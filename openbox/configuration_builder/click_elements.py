@@ -516,3 +516,12 @@ NetworkHeaderFieldsRewriter = build_element('NetworkHeaderFieldsRewriter',
                                                             'ipv4_proto', 'ipv4_src', 'ipv4_dst', 'ipv4_ecn',
                                                             'ipv4dsvp', 'ipv4_ttl', 'tcp_src', 'tcp_dst', 'udp_src',
                                                             'udp_dst'])
+
+Unqueue = build_element('Unqueue',
+                        keywords=[
+                            KeywordArgument('active'),
+                            KeywordArgument('limit'),
+                            KeywordArgument('burst'),
+                        ],
+                        read_handlers=['count', 'active', 'limit', 'burst'],
+                        write_handlers=['reset', 'count', 'limit', 'burst'])

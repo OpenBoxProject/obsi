@@ -414,9 +414,13 @@ ToDump = build_click_block('ToDump',
 ToDevice = build_click_block('ToDevice',
                              config_mapping=dict(devname=_no_transform('devname')),
                              elements=[
+                                 dict(name='queue', type='Queue', config={}),
                                  dict(name='to_device', type='ToDevice', config=dict(devname='$devname'))
                              ],
-                             input='to_device'
+                             connections=[
+                                 dict(src='queue', dst='to_device', src_port=0, dst_port=0),
+                             ],
+                             input='queue'
                              )
 
 Log = build_click_block('Log',
