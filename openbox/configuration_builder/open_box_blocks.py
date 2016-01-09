@@ -605,6 +605,21 @@ HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
                                                    HandlerField('reset_counts', FieldType.NULL)
                                                ])
 
+SetTimestamp = build_open_box_block('SetTimestamp',
+                                    config_fields=[
+                                        ConfigField('timestamp', False, FieldType.STRING),
+                                    ])
+
+SetTimestampDelta = build_open_box_block('SetTimestampDelta',
+                                         config_fields=[
+                                             ConfigField('type', False, FieldType.STRING)
+                                         ],
+                                         read_handlers=[
+                                             HandlerField('first', FieldType.STRING)
+                                         ],
+                                         write_handlers=[
+                                             HandlerField('reset', FieldType.NULL)
+                                         ])
 if __name__ == '__main__':
     blocks = [block.to_dict_schema() for block in OpenBoxBlock.blocks_registry.values()]
     with open('blocks.json', 'wb') as f:

@@ -525,3 +525,18 @@ Unqueue = build_element('Unqueue',
                         ],
                         read_handlers=['count', 'active', 'limit', 'burst'],
                         write_handlers=['reset', 'count', 'limit', 'burst'])
+
+SetTimestamp = build_element('SetTimestamp',
+                             optional_positional=[
+                                 OptionalPositionalArgument('timestamp'),
+                             ],
+                             keywords=[
+                                 KeywordArgument('first')
+                             ])
+
+SetTimestampDelta = build_element('SetTimestampDelta',
+                                  keywords=[
+                                      KeywordArgument('type')
+                                  ],
+                                  read_handlers=['first'],
+                                  write_handlers=['reset'])
