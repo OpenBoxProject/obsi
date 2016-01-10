@@ -442,6 +442,19 @@
     ]
   }, 
   {
+    "type": "SetTimestamp", 
+    "configuration": [
+      {
+        "name": "timestamp", 
+        "required": false, 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [], 
+    "write_handlers": []
+  }, 
+  {
     "type": "VlanEncapsulate", 
     "configuration": [
       {
@@ -652,6 +665,31 @@
       {
         "name": "payload_only", 
         "type": "boolean", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "SetTimestampDelta", 
+    "configuration": [
+      {
+        "name": "type", 
+        "required": false, 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "first", 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset", 
+        "type": "null", 
         "description": ""
       }
     ]

@@ -887,6 +887,24 @@ class HeaderPayloadClassifier(ClickBlock):
 
     def _create_regex_classifier_to_counter_connections(self, match, match_number):
         for i, original_match_number in enumerate(sorted(match.payload_matches)):
-            self._connections.append(Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
-                                                dst=self._to_external_element_name(self._MULTICOUNTER),
-                                                src_port=i, dst_port=original_match_number))
+            self._connections.append(
+                Connection(src=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
+                           dst=self._to_external_element_name(self._MULTICOUNTER),
+                           src_port=i, dst_port=original_match_number))
+
+
+SetTimestamp = build_click_block('SetTimestamp',
+                                 config_mapping=dict(timestamp=_no_transform('timestamp')),
+                                 elements=[dict(name='set_timestamp', type='SetTimestamp',
+                                                config=dict(timestamp='$timestamp'))],
+                                 input='set_timestamp',
+                                 output='set_timestamp',
+                                 )
+
+SetTimestampDelta = build_click_block('SetTimestampDelta',
+                                      config_mapping=dict(type=_no_transform('type')),
+                                      elements=[dict(name='set_timestamp_delta', type='SetTimestampDelta',
+                                                     config=dict(type='$type'))],
+                                      input='set_timestamp_delta',
+                                      output='set_timestamp_delta',
+                                      )
