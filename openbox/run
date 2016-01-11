@@ -1,0 +1,7 @@
+#!/bin/bash
+
+sudo ./manager.py --logging=debug
+
+sudo kill $(ps aux | grep '[m]anager\.py' | awk '{print $2}')
+sudo kill $(ps aux | grep '[r]est_server\.py' | awk '{print $2}')
+
