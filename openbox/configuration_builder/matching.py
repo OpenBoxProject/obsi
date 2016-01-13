@@ -39,8 +39,17 @@ class MacMatchField(MatchField):
 
 
 class Ipv4MatchField(MatchField):
-    def _to_output(self, value):
+    def ip_to_num(self, value):
         return ''.join(chr(int(c)) for c in value.split('.')).encode('hex')
+
+    def _to_output(self, value):
+        if '%' in value:
+            parts = value.split('%')
+            return "%s%%%s" % (self.ip_to_num(parts[0]), self.ip_to_num(parts[1]))
+        else:
+            return self.ip_to_num(value)
+#    def _to_output(self, value):
+#        return ''.join(chr(int(c)) for c in value.split('.')).encode('hex')
 
 
 class BitsIntMatchField(IntMatchField):
