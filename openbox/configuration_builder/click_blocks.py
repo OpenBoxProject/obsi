@@ -350,7 +350,7 @@ FromDevice = build_click_block('FromDevice',
                                                    promisc=_no_transform('promisc')),
                                elements=[
                                    dict(name='from_device', type='FromDevice',
-                                        config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc')),
+                                        config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc', snaplen=1500)),
                                    dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                    dict(name='counter', type='Counter', config={})
                                ],
