@@ -347,10 +347,12 @@ def _no_transform(name):
 FromDevice = build_click_block('FromDevice',
                                config_mapping=dict(devname=_no_transform('devname'),
                                                    sniffer=_no_transform('sniffer'),
-                                                   promisc=_no_transform('promisc')),
+                                                   promisc=_no_transform('promisc'),
+                                                   snaplen=_no_transform('snaplen')),
                                elements=[
                                    dict(name='from_device', type='FromDevice',
-                                        config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc')),
+                                        config=dict(devname='$devname', sniffer='$sniffer', promisc='$promisc',
+                                                    snaplen='$snaplen')),
                                    dict(name='mark_ip_header', type='AutoMarkIPHeader', config={}),
                                    dict(name='counter', type='Counter', config={})
                                ],

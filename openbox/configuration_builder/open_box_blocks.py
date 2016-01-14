@@ -295,6 +295,7 @@ FromDevice = build_open_box_block('FromDevice',
                                       ConfigField('devname', True, FieldType.STRING),
                                       ConfigField('sniffer', False, FieldType.BOOLEAN),
                                       ConfigField('promisc', False, FieldType.BOOLEAN),
+                                      ConfigField('snaplen', False, FieldType.INTEGER),
                                   ],
                                   read_handlers=[
                                       HandlerField('count', FieldType.INTEGER),
