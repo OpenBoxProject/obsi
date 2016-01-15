@@ -13,7 +13,7 @@ class MatchField(object):
     def to_classifier_clause(self, offset=0):
         if self.value is None:
             return ''
-        if isinstance(self.value, str) and '%' in self.value:
+        if isinstance(self.value, basestring) and '%' in self.value:
             value, mask = self.value.split('%')
             return '{offset}/{value}%{mask}'.format(offset=offset, value=self._to_output(value),
                                                     mask=self._to_output(mask))

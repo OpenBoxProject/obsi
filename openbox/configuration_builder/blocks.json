@@ -714,6 +714,12 @@
         "required": false, 
         "type": "boolean", 
         "description": ""
+      }, 
+      {
+        "name": "snaplen", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
       }
     ], 
     "read_handlers": [
