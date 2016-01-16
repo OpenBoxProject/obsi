@@ -68,6 +68,9 @@ class HeaderMatch(dict):
     def to_patterns(self):
         patterns = []
         clauses = []
+        # handle the match everything case first
+        if not self:
+            return ['-']
         if 'ETH_SRC' in self:
             clauses.append(MacMatchField(self['ETH_SRC']).to_classifier_clause(0))
         if 'ETH_DST' in self:
