@@ -52,3 +52,13 @@ def to_vlan_tci(vid, dei, pcp, **kwargs):
     pcp = to_int(pcp)
     return (vid | (dei << 12) | (pcp << 13)) & 0xffff
 
+
+def to_json_encoded(value, **kwargs):
+    if isinstance(value, (list, tuple)):
+        return [json.dumps(elem) for elem in value]
+    else:
+        return json.dumps(value)
+
+
+def to_quoted_json_escaped(value, **kwargs):
+    return to_quoted(to_json_encoded(value, **kwargs), **kwargs)

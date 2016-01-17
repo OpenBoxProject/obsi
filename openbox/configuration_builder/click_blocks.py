@@ -530,7 +530,7 @@ class HeaderClassifier(ClickBlock):
 
 
 RegexMatcher = build_click_block('RegexMatcher',
-                                 config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                 config_mapping=dict(pattern=(['pattern'], 'to_quoted_json_escaped'),
                                                      match_all=_no_transform('match_all'),
                                                      payload_only=_no_transform('payload_only')),
                                  elements=[
@@ -561,7 +561,7 @@ RegexMatcher = build_click_block('RegexMatcher',
                                  )
 
 RegexClassifier = build_click_block('RegexClassifier',
-                                    config_mapping=dict(pattern=(['pattern'], 'to_quoted'),
+                                    config_mapping=dict(pattern=(['pattern'], 'to_quoted_json_escaped'),
                                                         payload_only=_no_transform('payload_only')),
                                     elements=[
                                         dict(name='regex_classifier', type='RegexClassifier',
@@ -876,6 +876,8 @@ class HeaderPayloadClassifier(ClickBlock):
         patterns = []
         for i, original_match_number in enumerate(sorted(match.payload_matches)):
             for pattern in match.payload_matches[original_match_number]:
+                # escape pattern before passing it to the classifier
+                pattern = json.dumps(pattern)
                 patterns.append('"{pattern}" {group_number}'.format(pattern=pattern, group_number=i))
         self._elements.append(
             Element.from_dict(dict(name=self._to_external_element_name(self._REGEX_CLASSIFIER.format(num=match_number)),
