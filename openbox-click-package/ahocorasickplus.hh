@@ -65,6 +65,9 @@ public:
     bool match_any (const String& text, bool keep);
     bool match_any (const Packet *p, bool keep);
     bool match_any (const char* text, int size, bool keep);
+    int match_first(const char* text, int size, bool keep);
+    int match_first(const Packet *p, bool keep);
+    int match_first(const String& text, bool keep);
     bool is_open();
     
 private:
@@ -80,6 +83,14 @@ inline bool AhoCorasick::match_any(const Packet* p, bool keep) {
     return match_any((char *)p->data(), p->length(), keep);
 }
 
+inline int AhoCorasick::match_first(const Packet* p, bool keep) {
+    return match_first((char *)p->data(), p->length(), keep);
+}
+
+inline int AhoCorasick::match_first(const String& text, bool keep) {
+    return match_first(text.c_str(), text.length(), keep);
+}
+
 inline void AhoCorasick::finalize ()
 {
     ac_trie_finalize (_automata);
@@ -93,6 +104,16 @@ inline bool AhoCorasick::match_any(const char* text_to_match, int length, bool k
     return match.size > 0;
 }
 
+inline int AhoCorasick::match_first(const char* text_to_match, int length, bool keep) {
+    _text->astring = text_to_match;
+    _text->length = length;
+    ac_trie_settext(_automata, _text, (int)keep);
+    AC_MATCH_t match = ac_trie_findnext(_automata);
+    if (match.size > 0) {
+        return (int) match.patterns->id.u.number;
+    } 
+    return -1;
+}
 inline void AhoCorasick::reset() {
     ac_trie_release (_automata);
     _automata = ac_trie_create ();
