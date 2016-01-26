@@ -28,7 +28,7 @@ int StringClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
     for (int i=0; i < conf.size(); ++i) {
         // All patterns should be OK so we can only have duplicates 
         if (_matcher.add_pattern(cp_unquote(conf[i]), i)) {
-            errh->warning("Pattern #d is a duplicate");
+            errh->warning("Pattern %d is a duplicate", i);
         } else {
             _patterns.push_back(conf[i]);        
         }
@@ -72,7 +72,6 @@ bool StringClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler 
 
 void 
 StringClassifier::push(int, Packet* p) {
-    int output = _matcher.match_first(p, false);
     checked_output_push(_matcher.match_first(p, false), p);
 }
 
