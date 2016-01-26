@@ -483,8 +483,8 @@ class HeaderClassifier(ClickBlock):
 
     # Fake attributes used by other API functions
     __elements__ = (
-                    # dict(name='counter', type='MultiCounter', config={}),
-                    dict(name='classifier', type='Classifier', config=dict(pattern=[])),)
+        # dict(name='counter', type='MultiCounter', config={}),
+        dict(name='classifier', type='Classifier', config=dict(pattern=[])),)
 
     __input__ = 'classifier'
     # __output__ = 'counter'
@@ -920,3 +920,26 @@ SetTimestampDelta = build_click_block('SetTimestampDelta',
                                       input='set_timestamp_delta',
                                       output='set_timestamp_delta',
                                       )
+StringClassifier = build_click_block('StringClassifier',
+                                     config_mapping=dict(pattern=(['pattern'], 'to_quoted_json_escaped')),
+                                     elements=[
+                                         dict(name='string_classifier', type='StringClassifier',
+                                              config=dict(pattern='$pattern')),
+                                         # dict(name='counter', type='MultiCounter', config={}),
+                                     ],
+                                     # multi_connections=[
+                                     #     dict(src='string_classifier', dst='counter', based_on='pattern')
+                                     # ],
+                                     input='string_classifier',
+                                     # output='counter',
+                                     output='string_classifier',
+                                     read_mapping=dict(
+                                         # count=('counter', 'count', 'identity'),
+                                         # byte_count=('counter', 'byte_count', 'identity'),
+                                         # rate=('counter', 'rate', 'identity'),
+                                         # byte_rate=('counter', 'byte_rate', 'identity'),
+                                     ),
+                                     write_mapping=dict(
+                                         # reset_counts=('counter', 'reset_counts', 'identity'),
+                                     )
+                                     )
