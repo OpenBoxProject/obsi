@@ -70,6 +70,9 @@ bool RegexClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler *
     if (valid) {
         // Try to compile 
         valid = test_set.compile();
+        if (!valid) {
+            errh->error("Unable to compile, due lack of memory");
+        }
     }
 
     return valid;

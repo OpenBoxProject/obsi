@@ -3,11 +3,12 @@
 CLICK_DECLS
 
 RegexSet::RegexSet() :
-_compiled(false), 
-_npatterns(0),
-_compiled_regex(new re2::RE2::Set(re2::RE2::Options(), re2::RE2::UNANCHORED)) 
-{
-
+_compiled(false),
+_npatterns(0)
+{ 
+    re2::RE2::Options options;
+    options.set_max_mem(kDefaultMaxMem);
+    _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
 }
 
 RegexSet::~RegexSet() {
@@ -41,8 +42,12 @@ bool RegexSet::is_open() const {
 
 void RegexSet::reset() {
     _compiled = false;
-    delete _compiled_regex;
-    _compiled_regex = new re2::RE2::Set(re2::RE2::Options(), re2::RE2::UNANCHORED);
+    if (_compiled_regex) {
+        delete _compiled_regex;
+    }
+    re2::RE2::Options options;
+    options.set_max_mem(kDefaultMaxMem);
+    _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
     _npatterns = 0;
 }
 
