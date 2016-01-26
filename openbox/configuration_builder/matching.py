@@ -84,9 +84,9 @@ class HeaderMatch(dict):
             return self._compile_above_eth_type(clauses[:], 16)
         else:
             patterns.extend(self._compile_above_eth_type(clauses[:], 12))
-            # clauses_with_vlan = clauses[:]
-            # clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            # patterns.extend(self._compile_above_eth_type(clauses_with_vlan[:], 16))
+            clauses_with_vlan = clauses[:]
+            clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+            patterns.extend(self._compile_above_eth_type(clauses_with_vlan[:], 16))
 
         return patterns
 
