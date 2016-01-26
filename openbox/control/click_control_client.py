@@ -12,7 +12,7 @@ import time
 
 from control_exceptions import (UnknownHandlerOperation, ControlError, ControlSyntaxError, HandlerError,
                         NoRouterInstalledError, NoSuchElementError, NoSuchHandlerError, PermissionDeniedError,
-                        UnimplementedCommandError)
+                        UnimplementedCommandError, DataTooBigError)
 
 
 class ResponseCodes:
@@ -23,6 +23,7 @@ class ResponseCodes:
     NO_SUCH_ELEMENT = 510
     NO_SUCH_HANDLER = 511
     HANDLER_ERROR = 520
+    DATA_TOO_BIG = 521
     PERMISSION_DENIED = 530
     NO_ROUTER_INSTALLED = 540
 
@@ -46,6 +47,7 @@ _EXCPTIONS_CODE_MAPPING = {
     ResponseCodes.NO_SUCH_ELEMENT: NoSuchElementError,
     ResponseCodes.NO_SUCH_HANDLER: NoSuchHandlerError,
     ResponseCodes.HANDLER_ERROR: HandlerError,
+    ResponseCodes.DATA_TOO_BIG: DataTooBigError,
     ResponseCodes.PERMISSION_DENIED: PermissionDeniedError,
     ResponseCodes.NO_ROUTER_INSTALLED: NoRouterInstalledError
 }
