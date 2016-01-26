@@ -7,13 +7,17 @@
 CLICK_DECLS
 
 MultiCounter::MultiCounter() : 
-_count(0), _byte_count(0), _rate(0), _byte_rate(0)
+_count(0), 
+_byte_count(0),
+_rate(0), 
+_byte_rate(0)
 {
 }
 
 MultiCounter::~MultiCounter()
 {
 }
+
 
 void
 MultiCounter::cleanup(CleanupStage) {
@@ -48,7 +52,7 @@ MultiCounter::initialize(ErrorHandler *errh)
   _byte_count = new counter_t[ninputs()];
   _rate = new rate_t[ninputs()];
   _byte_rate = new byte_rate_t[ninputs()];
-  if (!_count || !_byte_count || !_rate || !_byte_rate) {
+  if (!_count || !_byte_count || !_rate || !_byte_rate ) {
     return errh->error("Out of memory!");
   }
   reset();
@@ -60,14 +64,6 @@ MultiCounter::push(int port, Packet *p)
 {
   update(p, port);
   output(port).push(p);
-}
-
-Packet *
-MultiCounter::pull(int port) 
-{
-  Packet *p = input(port).pull();
-  update(p, port);
-  return p;
 }
 
 String 
