@@ -45,7 +45,8 @@ def _get_full_uri(base, endpoint):
 def _start_remote_rest_server(bin_path, port, debug):
     # use the current interpreter to run the remote servers
     # this may be an issue with virtualenv or anaconda
-    cmd = [sys.executable, bin_path, '--port={port}'.format(port=port), '--debug={debug}'.format(debug=debug)]
+    cmd = [sys.executable, bin_path, '--port={port}'.format(port=port), '--debug={debug}'.format(debug=debug),
+           '--logging=debug']
     return psutil.Popen(cmd)
 
 

@@ -48,6 +48,13 @@ class HandlerError(ControlError):
     pass
 
 
+class DataTooBigError(ControlError):
+    """
+    521
+    """
+    pass
+
+
 class PermissionDeniedError(ControlError):
     """
     530

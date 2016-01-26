@@ -20,6 +20,7 @@ class RegexSet {
     bool match_any(const char *data, int length) const;
     bool match_all(const char *data, int length) const;
     int match_group(const char *data, int length, Vector<int> &pattern_group_numbers, Vector<int> &group_count) const;
+    static const int kDefaultMaxMem = 2<<28;
 
   private:
     bool _compiled;

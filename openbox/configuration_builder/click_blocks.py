@@ -470,7 +470,8 @@ ContentClassifier = build_click_block('ContentClassifier',
                                       ),
                                       write_mapping=dict(
                                           reset_counts=('counter', 'reset_counts', 'identity'),
-                                      ))
+                                      )
+                                      )
 
 
 class HeaderClassifier(ClickBlock):
@@ -480,8 +481,9 @@ class HeaderClassifier(ClickBlock):
     __config_mapping__ = {}
 
     # Fake attributes used by other API functions
-    __elements__ = (dict(name='counter', type='MultiCounter', config={}),
-                    dict(name='classifier', type='Classifier', config=dict(pattern=[])))
+    __elements__ = (
+        dict(name='counter', type='MultiCounter', config={}),
+        dict(name='classifier', type='Classifier', config=dict(pattern=[])),)
 
     __input__ = 'classifier'
     __output__ = 'counter'
@@ -491,7 +493,9 @@ class HeaderClassifier(ClickBlock):
         rate=('counter', 'rate', 'identity'),
         byte_rate=('counter', 'byte_rate', transformations.identity),
     )
-    __write_mapping__ = dict(reset_counts=('counter', 'reset_counts', 'identity'))
+    __write_mapping__ = dict(
+        reset_counts=('counter', 'reset_counts', 'identity')
+    )
 
     def __init__(self, open_box_block):
         super(HeaderClassifier, self).__init__(open_box_block)
@@ -912,3 +916,26 @@ SetTimestampDelta = build_click_block('SetTimestampDelta',
                                       input='set_timestamp_delta',
                                       output='set_timestamp_delta',
                                       )
+StringClassifier = build_click_block('StringClassifier',
+                                     config_mapping=dict(pattern=(['pattern'], 'to_quoted_json_escaped')),
+                                     elements=[
+                                         dict(name='string_classifier', type='StringClassifier',
+                                              config=dict(pattern='$pattern')),
+                                         dict(name='counter', type='MultiCounter', config={}),
+                                     ],
+                                     multi_connections=[
+                                         dict(src='string_classifier', dst='counter', based_on='pattern')
+                                     ],
+                                     input='string_classifier',
+                                     output='counter',
+                                     read_mapping=dict(
+                                         count=('counter', 'count', 'identity'),
+                                         byte_count=('counter', 'byte_count', 'identity'),
+                                         rate=('counter', 'rate', 'identity'),
+                                         byte_rate=('counter', 'byte_rate', 'identity'),
+                                     ),
+                                     write_mapping=dict(
+                                         reset_counts=('counter', 'reset_counts', 'identity'),
+                                     )
+                                     )
+

@@ -58,12 +58,12 @@ class MultiCounter : public Element { public:
     ~MultiCounter() CLICK_COLD;
 
     const char *class_name() const		{ return "MultiCounter"; }
-    const char *port_count() const        { return "-/="; }
+    const char *port_count() const        { return "1-/="; }
+    const char *processing() const    { return PUSH; }
     const char *flow_code() const         { return "#/#"; }
 
     void reset();
     void push(int port, Packet *p);
-    Packet *pull(int port);
     int initialize(ErrorHandler *) CLICK_COLD;
     void cleanup(CleanupStage stage) CLICK_COLD;
     void add_handlers() CLICK_COLD;

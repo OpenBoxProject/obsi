@@ -1,0 +1,13 @@
+--- /home/dev/workspace/click/elements/userlevel/controlsocket.cc	2016-01-26 16:47:49.630453790 +0200
++++ controlsocket.cc	2016-01-26 16:46:50.554456206 +0200
+@@ -547,6 +547,10 @@
+   if (_read_only)
+     return conn.message(CSERR_PERMISSION, "Permission denied for '" + handlername + "'");
+ 
++/* OpenBox patch to allow hotswap of any config */
++#undef LARGEST_HANDLER_WRITE
++/* End OpenBox patch */
++
+ #ifdef LARGEST_HANDLER_WRITE
+   if (data.length() > LARGEST_HANDLER_WRITE)
+     return conn.message(CSERR_DATA_TOO_BIG, "Data too large for write handler '" + handlername + "'");

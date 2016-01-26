@@ -540,3 +540,8 @@ SetTimestampDelta = build_element('SetTimestampDelta',
                                   ],
                                   read_handlers=['first'],
                                   write_handlers=['reset'])
+
+StringClassifier = build_element("StringClassifier",
+                                 list_argument=ListArguments('pattern'),
+                                 read_handlers=['pattern$i'],
+                                 write_handlers=['pattern$i'])

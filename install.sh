@@ -34,6 +34,8 @@ function install_click {
 	cd $BUILD_DIR
 	git clone $CLICK_URL
 	cd click
+	echo "[+] Patching Click"
+	patch elements/userlevel/controlsocket.cc $OBSI_DIR/click_controlsocket.patch
 	echo "[+] Configuring Click"
  	./configure --disable-linuxmodule --disable-linux-symbols --disable-linuxmodule --disable-bsdmodule --enable-all-elements --enable-user-multithread --enable-stats=1 --enable-json --disable-test
 	echo "[+] Compiling Click"
