@@ -4,6 +4,7 @@
 #
 # The Software is provided WITHOUT ANY WARRANTY, EXPRESS OR IMPLIED.
 #####################################################################
+from configuration_builder.configuration_builder_exceptions import ClickBlockConfigurationError
 
 
 class MatchField(object):
@@ -65,7 +66,7 @@ class BitsIntMatchField(IntMatchField):
 
 
 class HeaderMatch(dict):
-    def to_patterns(self):
+    def to_patterns(self, allow_vlan=True):
         patterns = []
         clauses = []
         # handle the match everything case first
@@ -76,6 +77,8 @@ class HeaderMatch(dict):
         if 'ETH_DST' in self:
             clauses.append(MacMatchField(self['ETH_DST']).to_classifier_clause(6))
         if 'VLAN_VID' in self or 'VLAN_PCP' in self:
+            if not allow_vlan:
+                raise ClickBlockConfigurationError("Cannot match on VLAN fields when allow_vlan is False")
             clauses.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
             if 'VLAN_VID' in self:
                 clauses.append(BitsIntMatchField(self['VLAN_VID'], bytes=2, bits=12).to_classifier_clause(14))
@@ -84,9 +87,10 @@ class HeaderMatch(dict):
             return self._compile_above_eth_type(clauses[:], 16)
         else:
             patterns.extend(self._compile_above_eth_type(clauses[:], 12))
-            clauses_with_vlan = clauses[:]
-            clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
-            patterns.extend(self._compile_above_eth_type(clauses_with_vlan[:], 16))
+            if allow_vlan:
+                clauses_with_vlan = clauses[:]
+                clauses_with_vlan.append(IntMatchField(str(0x8100), 2).to_classifier_clause(12))
+                patterns.extend(self._compile_above_eth_type(clauses_with_vlan[:], 16))
 
         return patterns
 

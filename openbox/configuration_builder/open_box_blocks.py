@@ -391,7 +391,8 @@ ContentClassifier = build_open_box_block('ContentClassifier',
 
 HeaderClassifier = build_open_box_block('HeaderClassifier',
                                         config_fields=[
-                                            ConfigField('match', True, FieldType.MATCH_PATTERNS)
+                                            ConfigField('match', True, FieldType.MATCH_PATTERNS),
+                                            ConfigField('allow_vlan', False, FieldType.BOOLEAN),
                                         ],
                                         read_handlers=[
                                             HandlerField('count', FieldType.INTEGER),
@@ -594,7 +595,8 @@ NetworkHeaderFieldsRewriter = build_open_box_block('NetworkHeaderFieldsRewriter'
 
 HeaderPayloadClassifier = build_open_box_block('HeaderPayloadClassifier',
                                                config_fields=[
-                                                   ConfigField('match', True, FieldType.COMPOUND_MATCHES)
+                                                   ConfigField('match', True, FieldType.COMPOUND_MATCHES),
+                                                   ConfigField('allow_vlan', False, FieldType.BOOLEAN),
                                                ],
                                                read_handlers=[
                                                    HandlerField('count', FieldType.INTEGER),

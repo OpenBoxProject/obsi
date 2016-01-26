@@ -526,8 +526,13 @@ class HeaderClassifier(ClickBlock):
         matches = [HeaderMatch(match) for match in self._block.match]
         patterns = []
         rule_numbers = []
+        try:
+            allow_vlan = self._block.allow_vlan
+        except AttributeError:
+            # default value is True
+            allow_vlan = True
         for i, match in enumerate(matches):
-            for pattern in match.to_patterns():
+            for pattern in match.to_patterns(allow_vlan):
                 patterns.append(pattern)
                 rule_numbers.append(i)
         return patterns, rule_numbers
@@ -838,8 +843,13 @@ class HeaderPayloadClassifier(ClickBlock):
                                                      type='MultiCounter', config={})))
         pattern_number = 0
         patterns = []
+        try:
+            allow_vlan = self._block.allow_vlan
+        except AttributeError:
+            # default value is True
+            allow_vlan = True
         for i, match in enumerate(matches):
-            match_patterns = match.header_match.to_patterns()
+            match_patterns = match.header_match.to_patterns(allow_vlan)
             self._create_regex_classifier_element_for_match(match, i)
             for _ in match_patterns:
                 self._create_content_classifier_to_regex_classifier_connection(pattern_number, i)
@@ -938,4 +948,3 @@ StringClassifier = build_click_block('StringClassifier',
                                          reset_counts=('counter', 'reset_counts', 'identity'),
                                      )
                                      )
-
