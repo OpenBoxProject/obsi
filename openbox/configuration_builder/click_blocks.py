@@ -455,23 +455,22 @@ ContentClassifier = build_click_block('ContentClassifier',
                                       config_mapping=dict(pattern=_no_transform('pattern')),
                                       elements=[
                                           dict(name='classifier', type='Classifier', config=dict(pattern='$pattern')),
-                                          # dict(name='counter', type='MultiCounter', config={})
+                                          dict(name='counter', type='MultiCounter', config={})
                                       ],
-                                      # multi_connections=[
-                                      #     dict(src='classifier', dst='counter', based_on='pattern')
-                                      # ],
+                                      multi_connections=[
+                                          dict(src='classifier', dst='counter', based_on='pattern')
+                                      ],
                                       input='classifier',
-                                      # output='counter',
-                                      output='classifier',
-                                      # read_mapping=dict(
-                                      #     count=('counter', 'count', 'identity'),
-                                      #     byte_count=('counter', 'byte_count', 'identity'),
-                                      #     rate=('counter', 'rate', 'identity'),
-                                      #     byte_rate=('counter', 'byte_rate', 'identity'),
-                                      # ),
-                                      # write_mapping=dict(
-                                      #     reset_counts=('counter', 'reset_counts', 'identity'),
-                                      # )
+                                      output='counter',
+                                      read_mapping=dict(
+                                          count=('counter', 'count', 'identity'),
+                                          byte_count=('counter', 'byte_count', 'identity'),
+                                          rate=('counter', 'rate', 'identity'),
+                                          byte_rate=('counter', 'byte_rate', 'identity'),
+                                      ),
+                                      write_mapping=dict(
+                                          reset_counts=('counter', 'reset_counts', 'identity'),
+                                      )
                                       )
 
 
@@ -483,20 +482,19 @@ class HeaderClassifier(ClickBlock):
 
     # Fake attributes used by other API functions
     __elements__ = (
-        # dict(name='counter', type='MultiCounter', config={}),
+        dict(name='counter', type='MultiCounter', config={}),
         dict(name='classifier', type='Classifier', config=dict(pattern=[])),)
 
     __input__ = 'classifier'
-    # __output__ = 'counter'
-    __output__ = 'classifier'
+    __output__ = 'counter'
     __read_mapping__ = dict(
-        # count=('counter', 'count', 'identity'),
-        # byte_count=('counter', 'byte_count', transformations.identity),
-        # rate=('counter', 'rate', 'identity'),
-        # byte_rate=('counter', 'byte_rate', transformations.identity),
+        count=('counter', 'count', 'identity'),
+        byte_count=('counter', 'byte_count', transformations.identity),
+        rate=('counter', 'rate', 'identity'),
+        byte_rate=('counter', 'byte_rate', transformations.identity),
     )
     __write_mapping__ = dict(
-        # reset_counts=('counter', 'reset_counts', 'identity')
+        reset_counts=('counter', 'reset_counts', 'identity')
     )
 
     def __init__(self, open_box_block):
@@ -515,14 +513,14 @@ class HeaderClassifier(ClickBlock):
         return self._connections
 
     def _compile_block(self):
-        # self._elements.append(Element.from_dict(dict(name=self._to_external_element_name('counter'),
-        #                                              type='MultiCounter', config={})))
+        self._elements.append(Element.from_dict(dict(name=self._to_external_element_name('counter'),
+                                                     type='MultiCounter', config={})))
         patterns, rule_numbers = self._compile_match_patterns()
         self._elements.append(Element.from_dict(dict(name=self._to_external_element_name('classifier'),
                                                      type='Classifier', config=dict(pattern=patterns))))
-        # for i, rule_number in enumerate(rule_numbers):
-        #     self._connections.append(Connection(self._to_external_element_name('classifier'),
-        #                                         self._to_external_element_name('counter'), i, rule_number))
+        for i, rule_number in enumerate(rule_numbers):
+            self._connections.append(Connection(self._to_external_element_name('classifier'),
+                                                self._to_external_element_name('counter'), i, rule_number))
 
     def _compile_match_patterns(self):
         matches = [HeaderMatch(match) for match in self._block.match]
@@ -543,25 +541,24 @@ RegexMatcher = build_click_block('RegexMatcher',
                                      dict(name='regex_matcher', type='RegexMatcher',
                                           config=dict(pattern='$pattern', payload_only='$payload_only',
                                                       match_all='$match_all')),
-                                     # dict(name='counter', type='MultiCounter', config={}),
+                                     dict(name='counter', type='MultiCounter', config={}),
                                  ],
-                                 # connections=[
-                                 #     dict(src='regex_matcher', dst='counter', src_port=0, dst_port=0),
-                                 #     dict(src='regex_matcher', dst='counter', src_port=1, dst_port=1),
-                                 # ],
+                                 connections=[
+                                     dict(src='regex_matcher', dst='counter', src_port=0, dst_port=0),
+                                     dict(src='regex_matcher', dst='counter', src_port=1, dst_port=1),
+                                 ],
                                  input='regex_matcher',
-                                 # output='counter',
-                                 output='regex_matcher',
+                                 output='counter',
                                  read_mapping=dict(
-                                     # count=('counter', 'count', 'identity'),
-                                     # byte_count=('counter', 'byte_count', 'identity'),
-                                     # rate=('counter', 'rate', 'identity'),
-                                     # byte_rate=('counter', 'byte_rate', 'identity'),
+                                     count=('counter', 'count', 'identity'),
+                                     byte_count=('counter', 'byte_count', 'identity'),
+                                     rate=('counter', 'rate', 'identity'),
+                                     byte_rate=('counter', 'byte_rate', 'identity'),
                                      match_all=('regex_matcher', 'match_all', 'identity'),
                                      payload_only=('regex_matcher', 'payload_only', 'identity'),
                                  ),
                                  write_mapping=dict(
-                                     # reset_counts=('counter', 'reset_counts', 'identity'),
+                                     reset_counts=('counter', 'reset_counts', 'identity'),
                                      match_all=('regex_matcher', 'match_all', 'to_lower'),
                                      payload_only=('regex_matcher', 'payload_only', 'to_lower'),
                                  )
@@ -573,23 +570,22 @@ RegexClassifier = build_click_block('RegexClassifier',
                                     elements=[
                                         dict(name='regex_classifier', type='RegexClassifier',
                                              config=dict(pattern='$pattern', payload_only='$payload_only')),
-                                        # dict(name='counter', type='MultiCounter', config={}),
+                                        dict(name='counter', type='MultiCounter', config={}),
                                     ],
-                                    # multi_connections=[
-                                    #     dict(src='regex_classifier', dst='counter', based_on='pattern')
-                                    # ],
+                                    multi_connections=[
+                                        dict(src='regex_classifier', dst='counter', based_on='pattern')
+                                    ],
                                     input='regex_classifier',
-                                    # output='counter',
-                                    output='regex_classifier',
+                                    output='counter',
                                     read_mapping=dict(
-                                        # count=('counter', 'count', 'identity'),
-                                        # byte_count=('counter', 'byte_count', 'identity'),
-                                        # rate=('counter', 'rate', 'identity'),
-                                        # byte_rate=('counter', 'byte_rate', 'identity'),
+                                        count=('counter', 'count', 'identity'),
+                                        byte_count=('counter', 'byte_count', 'identity'),
+                                        rate=('counter', 'rate', 'identity'),
+                                        byte_rate=('counter', 'byte_rate', 'identity'),
                                         payload_only=('regex_classifier', 'payload_only', 'identity'),
                                     ),
                                     write_mapping=dict(
-                                        # reset_counts=('counter', 'reset_counts', 'identity'),
+                                        reset_counts=('counter', 'reset_counts', 'identity'),
                                         payload_only=('regex_classifier', 'payload_only', 'to_lower'),
                                     )
                                     )
@@ -925,21 +921,21 @@ StringClassifier = build_click_block('StringClassifier',
                                      elements=[
                                          dict(name='string_classifier', type='StringClassifier',
                                               config=dict(pattern='$pattern')),
-                                         # dict(name='counter', type='MultiCounter', config={}),
+                                         dict(name='counter', type='MultiCounter', config={}),
                                      ],
-                                     # multi_connections=[
-                                     #     dict(src='string_classifier', dst='counter', based_on='pattern')
-                                     # ],
+                                     multi_connections=[
+                                         dict(src='string_classifier', dst='counter', based_on='pattern')
+                                     ],
                                      input='string_classifier',
-                                     # output='counter',
-                                     output='string_classifier',
+                                     output='counter',
                                      read_mapping=dict(
-                                         # count=('counter', 'count', 'identity'),
-                                         # byte_count=('counter', 'byte_count', 'identity'),
-                                         # rate=('counter', 'rate', 'identity'),
-                                         # byte_rate=('counter', 'byte_rate', 'identity'),
+                                         count=('counter', 'count', 'identity'),
+                                         byte_count=('counter', 'byte_count', 'identity'),
+                                         rate=('counter', 'rate', 'identity'),
+                                         byte_rate=('counter', 'byte_rate', 'identity'),
                                      ),
                                      write_mapping=dict(
-                                         # reset_counts=('counter', 'reset_counts', 'identity'),
+                                         reset_counts=('counter', 'reset_counts', 'identity'),
                                      )
                                      )
+
