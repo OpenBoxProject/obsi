@@ -11,6 +11,7 @@ Endpoint handlers for the REST server
 from tornado.log import app_log
 from tornado.web import RequestHandler, HTTPError
 from tornado.escape import json_decode
+import config
 from messages import Message, MessageParsingError
 
 
@@ -33,7 +34,8 @@ class RunnerAlertRequestHandler(BaseRequestHandler):
 
 class MessageRequestHandler(BaseRequestHandler):
     def post(self, message_type):
-        app_log.debug("Received message from controller:\n%s" % self.request.body)
+        if (config.RestServer.LOG_RECEIVED_MESSAGES):
+            app_log.debug("Received message from controller:\n%s" % self.request.body)
         message_dict = self._decoode_json_body()
         try:
             message = Message.from_dict(message_dict)

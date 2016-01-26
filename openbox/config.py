@@ -45,9 +45,10 @@ class Watchdog:
 
 
 class RestServer:
-    DEBUG = True
+    DEBUG = False
     PORT = 3636
     BASE_URI = 'http://127.0.0.1:{port}'.format(port=PORT)
+    LOG_RECEIVED_MESSAGES = False
 
     class Endpoints:
         RUNNER_ALERT = '/obsi/runner_alert'
