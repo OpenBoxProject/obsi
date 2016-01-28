@@ -1,184 +1,5 @@
 [
   {
-    "type": "NetworkDirectionSwap", 
-    "configuration": [
-      {
-        "name": "ethernet", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv4", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv6", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "udp", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "read_handlers": [
-      {
-        "name": "ethernet", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv4", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv6", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "udp", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "ethernet", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv4", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "ipv6", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "udp", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
-    "type": "DecIpTtl", 
-    "configuration": [
-      {
-        "name": "active", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "read_handlers": [
-      {
-        "name": "count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "active", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "reset_counts", 
-        "type": "null", 
-        "description": ""
-      }, 
-      {
-        "name": "active", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
-    "type": "HeaderPayloadClassifier", 
-    "configuration": [
-      {
-        "name": "match", 
-        "required": true, 
-        "type": "compound_matches", 
-        "description": ""
-      }
-    ], 
-    "read_handlers": [
-      {
-        "name": "count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_rate", 
-        "type": "number", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "reset_counts", 
-        "type": "null", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
     "type": "Log", 
     "configuration": [
       {
@@ -210,27 +31,8 @@
     "write_handlers": []
   }, 
   {
-    "type": "RegexMatcher", 
-    "configuration": [
-      {
-        "name": "pattern", 
-        "required": true, 
-        "type": "array", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "match_all", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
+    "type": "Discard", 
+    "configuration": [], 
     "read_handlers": [
       {
         "name": "count", 
@@ -250,78 +52,6 @@
       {
         "name": "byte_rate", 
         "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "match_all", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "reset_counts", 
-        "type": "null", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "match_all", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
-    "type": "FromDump", 
-    "configuration": [
-      {
-        "name": "filename", 
-        "required": true, 
-        "type": "string", 
-        "description": ""
-      }, 
-      {
-        "name": "timing", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }, 
-      {
-        "name": "active", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "read_handlers": [
-      {
-        "name": "count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_rate", 
-        "type": "integer", 
         "description": ""
       }, 
       {
@@ -344,115 +74,84 @@
     ]
   }, 
   {
-    "type": "Ipv4AddressTranslator", 
+    "type": "ContentClassifier", 
     "configuration": [
       {
-        "name": "input_spec", 
+        "name": "pattern", 
         "required": true, 
-        "type": "ipv4_translator_rules", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp_done_timeout", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp_nodata_timeout", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp_guarantee", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "udp_timeout", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "udp_streaming_timeout", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "udp_guarantee", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "reap_interval", 
-        "required": false, 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "mapping_capacity", 
-        "required": false, 
-        "type": "integer", 
+        "type": "array", 
         "description": ""
       }
     ], 
     "read_handlers": [
       {
-        "name": "mapping_count", 
+        "name": "count", 
         "type": "integer", 
         "description": ""
       }, 
       {
-        "name": "mapping_failures", 
+        "name": "byte_count", 
         "type": "integer", 
         "description": ""
       }, 
       {
-        "name": "length", 
-        "type": "integer", 
+        "name": "rate", 
+        "type": "number", 
         "description": ""
       }, 
       {
-        "name": "capacity", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "tcp_mapping", 
-        "type": "string", 
-        "description": ""
-      }, 
-      {
-        "name": "udp_mapping", 
-        "type": "string", 
+        "name": "byte_rate", 
+        "type": "number", 
         "description": ""
       }
     ], 
     "write_handlers": [
       {
-        "name": "capacity", 
-        "type": "integer", 
+        "name": "reset_counts", 
+        "type": "null", 
         "description": ""
       }
     ]
   }, 
   {
-    "type": "SetTimestamp", 
+    "type": "StringClassifier", 
     "configuration": [
       {
-        "name": "timestamp", 
-        "required": false, 
-        "type": "string", 
+        "name": "pattern", 
+        "required": true, 
+        "type": "array", 
         "description": ""
       }
     ], 
-    "read_handlers": [], 
-    "write_handlers": []
+    "read_handlers": [
+      {
+        "name": "count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "rate", 
+        "type": "number", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_rate", 
+        "type": "number", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset_counts", 
+        "type": "null", 
+        "description": ""
+      }
+    ]
   }, 
   {
     "type": "VlanEncapsulate", 
@@ -569,127 +268,99 @@
     "write_handlers": []
   }, 
   {
-    "type": "Queue", 
+    "type": "Ipv4AddressTranslator", 
     "configuration": [
       {
-        "name": "capacity", 
+        "name": "input_spec", 
+        "required": true, 
+        "type": "ipv4_translator_rules", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp_done_timeout", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp_nodata_timeout", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp_guarantee", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "udp_timeout", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "udp_streaming_timeout", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "udp_guarantee", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "reap_interval", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "mapping_capacity", 
         "required": false, 
         "type": "integer", 
         "description": ""
       }
     ], 
     "read_handlers": [
+      {
+        "name": "mapping_count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "mapping_failures", 
+        "type": "integer", 
+        "description": ""
+      }, 
       {
         "name": "length", 
         "type": "integer", 
         "description": ""
       }, 
       {
-        "name": "highwater_length", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "drops", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
         "name": "capacity", 
         "type": "integer", 
         "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "reset_counts", 
-        "type": "integer", 
-        "description": ""
       }, 
       {
-        "name": "reset", 
-        "type": "integer", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
-    "type": "RegexClassifier", 
-    "configuration": [
-      {
-        "name": "pattern", 
-        "required": true, 
-        "type": "array", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "required": false, 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "read_handlers": [
-      {
-        "name": "count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_count", 
-        "type": "integer", 
-        "description": ""
-      }, 
-      {
-        "name": "rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "byte_rate", 
-        "type": "number", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ], 
-    "write_handlers": [
-      {
-        "name": "reset_counts", 
-        "type": "null", 
-        "description": ""
-      }, 
-      {
-        "name": "payload_only", 
-        "type": "boolean", 
-        "description": ""
-      }
-    ]
-  }, 
-  {
-    "type": "SetTimestampDelta", 
-    "configuration": [
-      {
-        "name": "type", 
-        "required": false, 
+        "name": "tcp_mapping", 
         "type": "string", 
         "description": ""
-      }
-    ], 
-    "read_handlers": [
+      }, 
       {
-        "name": "first", 
+        "name": "udp_mapping", 
         "type": "string", 
         "description": ""
       }
     ], 
     "write_handlers": [
       {
-        "name": "reset", 
-        "type": "null", 
+        "name": "capacity", 
+        "type": "integer", 
         "description": ""
       }
     ]
@@ -758,21 +429,73 @@
     ]
   }, 
   {
-    "type": "ToDump", 
+    "type": "HeaderClassifier", 
     "configuration": [
       {
-        "name": "filename", 
+        "name": "match", 
         "required": true, 
-        "type": "string", 
+        "type": "match_patterns", 
+        "description": ""
+      }, 
+      {
+        "name": "allow_vlan", 
+        "required": false, 
+        "type": "boolean", 
         "description": ""
       }
     ], 
-    "read_handlers": [], 
-    "write_handlers": []
+    "read_handlers": [
+      {
+        "name": "count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "rate", 
+        "type": "number", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_rate", 
+        "type": "number", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset_counts", 
+        "type": "null", 
+        "description": ""
+      }
+    ]
   }, 
   {
-    "type": "Discard", 
-    "configuration": [], 
+    "type": "RegexMatcher", 
+    "configuration": [
+      {
+        "name": "pattern", 
+        "required": true, 
+        "type": "array", 
+        "description": ""
+      }, 
+      {
+        "name": "payload_only", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "match_all", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }
+    ], 
     "read_handlers": [
       {
         "name": "count", 
@@ -795,8 +518,13 @@
         "description": ""
       }, 
       {
-        "name": "drops", 
-        "type": "string", 
+        "name": "payload_only", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "match_all", 
+        "type": "boolean", 
         "description": ""
       }
     ], 
@@ -807,11 +535,75 @@
         "description": ""
       }, 
       {
-        "name": "active", 
+        "name": "payload_only", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "match_all", 
         "type": "boolean", 
         "description": ""
       }
     ]
+  }, 
+  {
+    "type": "HeaderPayloadClassifier", 
+    "configuration": [
+      {
+        "name": "match", 
+        "required": true, 
+        "type": "compound_matches", 
+        "description": ""
+      }, 
+      {
+        "name": "allow_vlan", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "rate", 
+        "type": "number", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_rate", 
+        "type": "number", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset_counts", 
+        "type": "null", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "SetTimestamp", 
+    "configuration": [
+      {
+        "name": "timestamp", 
+        "required": false, 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [], 
+    "write_handlers": []
   }, 
   {
     "type": "NetworkHeaderFieldsRewriter", 
@@ -1031,18 +823,63 @@
     ]
   }, 
   {
-    "type": "VlanDecapsulate", 
-    "configuration": [], 
-    "read_handlers": [], 
-    "write_handlers": []
-  }, 
-  {
-    "type": "HeaderClassifier", 
+    "type": "Queue", 
     "configuration": [
       {
-        "name": "match", 
+        "name": "capacity", 
+        "required": false, 
+        "type": "integer", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "length", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "highwater_length", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "drops", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "capacity", 
+        "type": "integer", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset_counts", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "reset", 
+        "type": "integer", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "RegexClassifier", 
+    "configuration": [
+      {
+        "name": "pattern", 
         "required": true, 
-        "type": "match_patterns", 
+        "type": "array", 
+        "description": ""
+      }, 
+      {
+        "name": "payload_only", 
+        "required": false, 
+        "type": "boolean", 
         "description": ""
       }
     ], 
@@ -1065,6 +902,11 @@
       {
         "name": "byte_rate", 
         "type": "number", 
+        "description": ""
+      }, 
+      {
+        "name": "payload_only", 
+        "type": "boolean", 
         "description": ""
       }
     ], 
@@ -1073,16 +915,21 @@
         "name": "reset_counts", 
         "type": "null", 
         "description": ""
+      }, 
+      {
+        "name": "payload_only", 
+        "type": "boolean", 
+        "description": ""
       }
     ]
   }, 
   {
-    "type": "ContentClassifier", 
+    "type": "DecIpTtl", 
     "configuration": [
       {
-        "name": "pattern", 
-        "required": true, 
-        "type": "array", 
+        "name": "active", 
+        "required": false, 
+        "type": "boolean", 
         "description": ""
       }
     ], 
@@ -1106,11 +953,135 @@
         "name": "byte_rate", 
         "type": "number", 
         "description": ""
+      }, 
+      {
+        "name": "active", 
+        "type": "boolean", 
+        "description": ""
       }
     ], 
     "write_handlers": [
       {
         "name": "reset_counts", 
+        "type": "null", 
+        "description": ""
+      }, 
+      {
+        "name": "active", 
+        "type": "boolean", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "NetworkDirectionSwap", 
+    "configuration": [
+      {
+        "name": "ethernet", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv4", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv6", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "udp", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "ethernet", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv4", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv6", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "udp", 
+        "type": "boolean", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "ethernet", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv4", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "ipv6", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "tcp", 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "udp", 
+        "type": "boolean", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "SetTimestampDelta", 
+    "configuration": [
+      {
+        "name": "type", 
+        "required": false, 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "first", 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset", 
         "type": "null", 
         "description": ""
       }
@@ -1126,6 +1097,87 @@
         "description": ""
       }
     ], 
+    "read_handlers": [], 
+    "write_handlers": []
+  }, 
+  {
+    "type": "FromDump", 
+    "configuration": [
+      {
+        "name": "filename", 
+        "required": true, 
+        "type": "string", 
+        "description": ""
+      }, 
+      {
+        "name": "timing", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }, 
+      {
+        "name": "active", 
+        "required": false, 
+        "type": "boolean", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [
+      {
+        "name": "count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_count", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "rate", 
+        "type": "number", 
+        "description": ""
+      }, 
+      {
+        "name": "byte_rate", 
+        "type": "integer", 
+        "description": ""
+      }, 
+      {
+        "name": "drops", 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "write_handlers": [
+      {
+        "name": "reset_counts", 
+        "type": "null", 
+        "description": ""
+      }, 
+      {
+        "name": "active", 
+        "type": "boolean", 
+        "description": ""
+      }
+    ]
+  }, 
+  {
+    "type": "ToDump", 
+    "configuration": [
+      {
+        "name": "filename", 
+        "required": true, 
+        "type": "string", 
+        "description": ""
+      }
+    ], 
+    "read_handlers": [], 
+    "write_handlers": []
+  }, 
+  {
+    "type": "VlanDecapsulate", 
+    "configuration": [], 
     "read_handlers": [], 
     "write_handlers": []
   }

@@ -72,7 +72,11 @@ bool StringClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler 
 
 void 
 StringClassifier::push(int, Packet* p) {
-    checked_output_push(_matcher.match_first(p, false), p);
+    int output = _matcher.match_first(p, false);
+    if (output == -1) {
+        output = _patterns.size();
+    }
+    checked_output_push(output, p);
 }
 
 int

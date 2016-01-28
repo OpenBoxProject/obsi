@@ -114,7 +114,8 @@ class ClickBlock(object):
         src = self._to_external_element_name(multi_connection.src)
         dst = self._to_external_element_name(multi_connection.dst)
         based_on = multi_connection.based_on
-        new_multi_connection = MultiConnection(src, dst, based_on)
+        extra_connections = multi_connection.extra_connections
+        new_multi_connection = MultiConnection(src, dst, based_on, extra_connections)
         return new_multi_connection
 
     def _connections_from_multi_connections(self):
@@ -526,8 +527,13 @@ class HeaderClassifier(ClickBlock):
         matches = [HeaderMatch(match) for match in self._block.match]
         patterns = []
         rule_numbers = []
+        try:
+            allow_vlan = self._block.allow_vlan
+        except AttributeError:
+            # default value is True
+            allow_vlan = True
         for i, match in enumerate(matches):
-            for pattern in match.to_patterns():
+            for pattern in match.to_patterns(allow_vlan):
                 patterns.append(pattern)
                 rule_numbers.append(i)
         return patterns, rule_numbers
@@ -838,8 +844,13 @@ class HeaderPayloadClassifier(ClickBlock):
                                                      type='MultiCounter', config={})))
         pattern_number = 0
         patterns = []
+        try:
+            allow_vlan = self._block.allow_vlan
+        except AttributeError:
+            # default value is True
+            allow_vlan = True
         for i, match in enumerate(matches):
-            match_patterns = match.header_match.to_patterns()
+            match_patterns = match.header_match.to_patterns(allow_vlan)
             self._create_regex_classifier_element_for_match(match, i)
             for _ in match_patterns:
                 self._create_content_classifier_to_regex_classifier_connection(pattern_number, i)
@@ -924,7 +935,8 @@ StringClassifier = build_click_block('StringClassifier',
                                          dict(name='counter', type='MultiCounter', config={}),
                                      ],
                                      multi_connections=[
-                                         dict(src='string_classifier', dst='counter', based_on='pattern')
+                                         dict(src='string_classifier', dst='counter', based_on='pattern',
+                                              extra_connections=1)
                                      ],
                                      input='string_classifier',
                                      output='counter',
@@ -938,4 +950,3 @@ StringClassifier = build_click_block('StringClassifier',
                                          reset_counts=('counter', 'reset_counts', 'identity'),
                                      )
                                      )
-

@@ -70,10 +70,11 @@ class MultiConnection(object):
     Multiple connections between two elements where the amount of connections
     is based on the size of some field of the input
     """
-    def __init__(self, src, dst, based_on):
+    def __init__(self, src, dst, based_on, extra_connections=0):
         self.src = src
         self.dst = dst
         self.based_on = based_on
+        self.extra_connections = extra_connections
 
     @classmethod
     def from_dict(cls, config):
@@ -86,11 +87,11 @@ class MultiConnection(object):
         based_on = config.get('based_on')
         if based_on is None:
             raise ConnectionConfigurationError("Connection has no 'based_on' element in configuration")
-
-        return cls(src, dst, based_on)
+        extra_connections = config.get("extra_connections", 0)
+        return cls(src, dst, based_on, extra_connections)
 
     def to_dict(self):
-        return dict(src=self.src, dst=self.dst, based_on=self.based_on)
+        return dict(src=self.src, dst=self.dst, based_on=self.based_on, extra_connections=self.extra_connections)
 
     def to_connections(self, element):
         try:
@@ -102,7 +103,7 @@ class MultiConnection(object):
             raise ConnectionConfigurationError("Field {name} need to be a list/tuple not {type}".format(name=self.based_on,
                                                                                                         type=type(field)))
         connections = []
-        for i in xrange(len(field)):
+        for i in xrange(len(field) + self.extra_connections):
             connections.append(Connection(self.src, self.dst, i, i))
 
         return connections
