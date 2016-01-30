@@ -72,9 +72,9 @@ class RegexClassifier : public Element {
     bool is_valid_patterns(Vector<String> &patterns, ErrorHandler *errh) const;
     static String read_handler(Element *, void *) CLICK_COLD;
     static int write_handler(const String&, Element*, void*, ErrorHandler*) CLICK_COLD;
-    RegexSet _program;
+    RegexSet *_program;
     bool _payload_only;
-    
+    int _max_mem;    
 };
 
 CLICK_ENDDECLS

@@ -8,20 +8,28 @@
 
 CLICK_DECLS
 
-RegexClassifier::RegexClassifier() {
+RegexClassifier::RegexClassifier() : 
+_program(0)
+{
 }
 
 RegexClassifier::~RegexClassifier() {
+    if (_program) {
+        delete _program;
+    }
 }
 
 int RegexClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
 {
     bool payload_only = false;
+    int max_mem = RegexSet::kDefaultMaxMem;
     if (Args(this, errh).bind(conf)
       .read("PAYLOAD_ONLY", payload_only)
+      .read("MAX_REGEX_MEMORY", max_mem)
       .consume() < 0)
       return -1;
     _payload_only = payload_only;
+    _max_mem = max_mem;
 
     if (conf.size() != noutputs())
 	   return errh->error("need %d patterns, one per output port", noutputs());
@@ -30,20 +38,22 @@ int RegexClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
         return -1;
     }
 
-    if (!_program.is_open()) {
-        _program.reset();
+    if (!_program) {
+        _program = new RegexSet(_max_mem);
+    } else if (!_program->is_open()) {
+        _program->reset();
     }
 
     for (int i=0; i < conf.size(); ++i) {
         String pattern = cp_unquote(conf[i]);
-        int result = _program.add_pattern(pattern); 
+        int result = _program->add_pattern(pattern); 
         if (result < 0) {
             // This should not happen
             return errh->error("Error (%d) adding pattern %d: %s", result, i, pattern.c_str());
         }
     }
 
-    if (!_program.compile()) {
+    if (!_program->compile()) {
         // This should not happen
         return errh->error("Unable to compile patterns");
     }
@@ -57,7 +67,7 @@ int RegexClassifier::configure(Vector<String> &conf, ErrorHandler *errh)
 }
 
 bool RegexClassifier::is_valid_patterns(Vector<String> &patterns, ErrorHandler *errh) const{
-    RegexSet test_set;
+    RegexSet test_set(_max_mem);
     bool valid = true;
     for (int i=0; i < patterns.size(); ++i) {
         String pattern = cp_unquote(patterns[i]);
@@ -130,7 +140,7 @@ RegexClassifier::push(int, Packet* p) {
             length = p->transport_length();
         }
     }
-    checked_output_push(_program.match_first(data, length), p);
+    checked_output_push(_program->match_first(data, length), p);
 }
 
 CLICK_ENDDECLS
