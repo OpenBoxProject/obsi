@@ -426,7 +426,8 @@ RegexMatcher = build_element("RegexMatcher",
 
 RegexClassifier = build_element("RegexClassifier",
                                 list_argument=ListArguments('pattern'),
-                                keywords=[KeywordArgument('payload_only')],
+                                keywords=[KeywordArgument('payload_only'),
+                                          KeywordArgument('max_regex_memory')],
                                 read_handlers=['payload_only', 'pattern$i'],
                                 write_handlers=['payload_only', 'pattern$i'])
 
