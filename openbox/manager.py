@@ -338,7 +338,7 @@ class Manager(object):
 
     @gen.coroutine
     def get_engine_global_stats(self):
-        client = httpclient.AsyncHTTPClient()
+        client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
         memory_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.MEMORY)
         cpu_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.CPU)
         uptime_uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.UPTIME)
@@ -378,7 +378,7 @@ class Manager(object):
             uri = _get_full_uri(config.Control.Rest.BASE_URI,
                                 config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=element,
                                                                                      handler=handler))
-            client = httpclient.AsyncHTTPClient()
+            client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
             response = yield client.fetch(uri)
             raise gen.Return(transform_function(json_decode(response.body)))
 
@@ -398,7 +398,7 @@ class Manager(object):
                                 config.Control.Rest.Endpoints.HANDLER_PATTERN.format(element=engine_element_name,
                                                                                      handler=engine_handler_name))
             body = json_encode(transform_function(value))
-            client = httpclient.AsyncHTTPClient()
+            client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
             yield client.fetch(uri, method='POST', body=body)
             raise gen.Return(True)
 
@@ -409,7 +409,7 @@ class Manager(object):
                                                                                           config.Engine.REQUIREMENTS)
         engine_config = self._engine_config_builder.to_engine_config()
         app_log.debug("Setting processing graph to:\n%s" % engine_config)
-        client = httpclient.AsyncHTTPClient()
+        client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
 
         uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.CONFIG)
         yield client.fetch(uri, method='POST', body=json_encode(engine_config))
@@ -507,19 +507,19 @@ class Manager(object):
     @gen.coroutine
     def _install_package(self, name, content, encoding):
         package = dict(name=name, data=content, encoding=encoding)
-        client = httpclient.AsyncHTTPClient()
+        client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
         uri = _get_full_uri(config.Runner.Rest.BASE_URI, config.Runner.Rest.Endpoints.INSTALL)
         yield client.fetch(uri, method='POST', body=json_encode(package))
 
     @gen.coroutine
     def _update_running_config_with_package(self, name):
-        client = httpclient.AsyncHTTPClient()
+        client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
         uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.LOADED_PACKAGES)
         yield client.fetch(uri, method='POST', body=json_encode(name))
 
     @gen.coroutine
     def _update_supported_elements(self):
-        client = httpclient.AsyncHTTPClient()
+        client = httpclient.AsyncHTTPClient(request_timeout=config.Manager.REQUEST_TIMEOUT)
         uri = _get_full_uri(config.Control.Rest.BASE_URI, config.Control.Rest.Endpoints.SUPPORTED_ELEMENTS)
         response = yield client.fetch(uri)
         self._supported_elements_types = set(json_decode(response.body))

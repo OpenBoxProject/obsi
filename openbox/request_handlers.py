@@ -34,7 +34,7 @@ class RunnerAlertRequestHandler(BaseRequestHandler):
 
 class MessageRequestHandler(BaseRequestHandler):
     def post(self, message_type):
-        if (config.RestServer.LOG_RECEIVED_MESSAGES):
+        if config.RestServer.LOG_RECEIVED_MESSAGES:
             app_log.debug("Received message from controller:\n%s" % self.request.body)
         message_dict = self._decoode_json_body()
         try:
