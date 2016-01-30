@@ -5,10 +5,21 @@ CLICK_DECLS
 RegexSet::RegexSet() :
 _compiled(false),
 _npatterns(0)
-{ 
-    re2::RE2::Options options;
-    options.set_max_mem(kDefaultMaxMem);
-    _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
+{
+  _max_mem = kDefaultMaxMem;
+  re2::RE2::Options options;
+  options.set_max_mem(_max_mem);
+  _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
+}
+
+RegexSet::RegexSet(int max_mem) :
+_compiled(false),
+_npatterns(0)
+{
+  _max_mem = max_mem;
+  re2::RE2::Options options;
+  options.set_max_mem(_max_mem);
+  _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
 }
 
 RegexSet::~RegexSet() {
@@ -46,7 +57,7 @@ void RegexSet::reset() {
         delete _compiled_regex;
     }
     re2::RE2::Options options;
-    options.set_max_mem(kDefaultMaxMem);
+    options.set_max_mem(_max_mem);
     _compiled_regex = new re2::RE2::Set(options, re2::RE2::UNANCHORED);
     _npatterns = 0;
 }

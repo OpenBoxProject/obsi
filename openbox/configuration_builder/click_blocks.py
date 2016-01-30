@@ -572,10 +572,12 @@ RegexMatcher = build_click_block('RegexMatcher',
 
 RegexClassifier = build_click_block('RegexClassifier',
                                     config_mapping=dict(pattern=(['pattern'], 'to_quoted_json_escaped'),
-                                                        payload_only=_no_transform('payload_only')),
+                                                        payload_only=_no_transform('payload_only'),
+                                                        max_regex_memory=_no_transform('max_regex_memory')),
                                     elements=[
                                         dict(name='regex_classifier', type='RegexClassifier',
-                                             config=dict(pattern='$pattern', payload_only='$payload_only')),
+                                             config=dict(pattern='$pattern', payload_only='$payload_only',
+                                                         max_regex_memory='$max_regex_memory')),
                                         dict(name='counter', type='MultiCounter', config={}),
                                     ],
                                     multi_connections=[

@@ -10,6 +10,7 @@ CLICK_DECLS
 class RegexSet {
   public:
     RegexSet();
+    RegexSet(int max_mem);
     ~RegexSet();
     int add_pattern(const String& pattern);
     bool compile();
@@ -25,6 +26,7 @@ class RegexSet {
   private:
     bool _compiled;
     unsigned _npatterns; 
+    int _max_mem;
     re2::RE2::Set *_compiled_regex; 
 };
 

@@ -27,6 +27,9 @@ class Manager:
     # The interval in seconds between tries for a check if a remote REST server is listening
     INTERVAL_BETWEEN_CONNECTION_TRIES = 1
 
+    # Http client request timeout in seconds
+    REQUEST_TIMEOUT = 10
+
 
 class KeepAlive:
     # The interval in milliseconds between KeepAlive messages

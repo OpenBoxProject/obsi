@@ -429,6 +429,7 @@ RegexClassifier = build_open_box_block('RegexClassifier',
                                        config_fields=[
                                            ConfigField('pattern', True, FieldType.ARRAY),
                                            ConfigField('payload_only', False, FieldType.BOOLEAN),
+                                           ConfigField('max_regex_memory', False, FieldType.INTEGER),
                                        ],
                                        read_handlers=[
                                            HandlerField('count', FieldType.INTEGER),

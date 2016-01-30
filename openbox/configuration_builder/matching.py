@@ -7,6 +7,13 @@
 from configuration_builder.configuration_builder_exceptions import ClickBlockConfigurationError
 
 
+def _to_int(value):
+    try:
+        return int(value, 10)
+    except ValueError:
+        return int(value, 16)
+
+
 class MatchField(object):
     def __init__(self, value):
         self.value = value
@@ -31,7 +38,7 @@ class IntMatchField(MatchField):
         self._fmt = "%0{bytes}x".format(bytes=bytes * 2)
 
     def _to_output(self, value):
-        return self._fmt % int(value)
+        return self._fmt % _to_int(value)
 
 
 class MacMatchField(MatchField):
